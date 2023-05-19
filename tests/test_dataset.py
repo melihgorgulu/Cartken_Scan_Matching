@@ -7,10 +7,7 @@ from torch.utils.data import random_split, DataLoader
 
 
 def test_dataset():
-    sm = ScanMatchingDataSet(
-        data_dir=Path("/dataset"),
-        lbl_path=Path(
-            "/dataset/labels/lbl.json"))
+    sm = ScanMatchingDataSet()
     img, trans_img, lbl = sm[random.randint(0, len(sm))]
     show_tensor_image(img)
     show_tensor_image(trans_img)
@@ -19,10 +16,7 @@ def test_dataset():
 
 
 def test_dataloader():
-    sm = ScanMatchingDataSet(
-        data_dir=Path("/dataset"),
-        lbl_path=Path(
-            "/dataset/labels/lbl.json"))
+    sm = ScanMatchingDataSet()
     train_size = 0.7
     test_size = 0.1
     val_size = 0.2
@@ -41,5 +35,5 @@ def test_dataloader():
 
 
 if __name__ == "__main__":
-    # test_dataset()
+    test_dataset()
     test_dataloader()
