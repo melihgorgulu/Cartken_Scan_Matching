@@ -2,6 +2,7 @@
   "BATCH_SIZE": 32,
   "IMAGE_HEIGHT": 300,
   "IMAGE_WIDTH": 300,
+  "NUMBER_OF_CHANNEL": 1,
   "DATA_ROOT_DIR": "/Users/melihgorgulu/Desktop/Projects/Cartken/Cartken_Scan_Matching/data/dataset",
   "LABELS_DIR": "/Users/melihgorgulu/Desktop/Projects/Cartken/Cartken_Scan_Matching/data/dataset/labels"
 }
