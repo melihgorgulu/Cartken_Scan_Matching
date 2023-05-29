@@ -8,10 +8,11 @@ from torch.utils.data import random_split, DataLoader
 
 def test_dataset():
     sm = ScanMatchingDataSet()
-    img, trans_img, lbl = sm[random.randint(0, len(sm))]
+    img, trans_img, lbl_transform, lbl_match = sm[random.randint(0, len(sm))]
     show_tensor_image(img)
     show_tensor_image(trans_img)
-    print(lbl)
+    print(lbl_transform)
+    print(lbl_match)
     print(len(sm))
 
 
@@ -28,8 +29,8 @@ def test_dataloader():
     test_loader = DataLoader(test_data)
     print(len(train_loader), len(val_loader), len(test_loader))
     for idx, item in enumerate(train_loader):
-        img, trans_im, lbl = item
-        print(img.shape, trans_im.shape, lbl)
+        img, trans_im, lbl_transform, lbl_match = item
+        print(img.shape, trans_im.shape, lbl_transform, lbl_match)
         if idx == 3:
             break
 
