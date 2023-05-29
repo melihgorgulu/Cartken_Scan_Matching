@@ -1,5 +1,5 @@
 # Custom Ignores
-data/
+**/data/dataset/
 .DS_Store
 .idea
 .python-version
