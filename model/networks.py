@@ -1,6 +1,9 @@
+import torch
 from torch import nn, concat
 import torch.nn.functional as F
 from utils.config import get_data_config
+from typing import Tuple
+
 
 _data_config = get_data_config()
 IMAGE_SIZE = _data_config["IMAGE_HEIGHT"]
@@ -77,7 +80,7 @@ class BasicSMNetwork(nn.Module):
         self.fcn1 = nn.Linear(64 * 37 * 37, 1024)
         self.fcn2 = nn.Linear(1024, 512)
 
-    def forward(self, x1, x2):
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # extract features
         f1 = self.backbone(x1)
         f2 = self.backbone(x2)
