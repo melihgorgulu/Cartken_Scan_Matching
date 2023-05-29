@@ -4,18 +4,22 @@ import warnings
 from typing import Optional, Dict, Tuple, List
 import time
 from torch.utils.data import DataLoader
+from pathlib import Path
+from utils.io_utils import save_to_json
+from utils.config import get_train_config
+import matplotlib.pyplot as plt
 
 
 class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
-                 logger_kwargs: Dict, device: Optional[str] = None):
+                 logger_kwargs: Dict, device: Optional[str] = None, experiment_name: Optional[str] = "test"):
 
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
         self.logger_kwargs = logger_kwargs
         self.device = self._get_device(device)
-
+        self.experiment_name = experiment_name
         self.model.to(self.device)
 
         # attributes
@@ -24,6 +28,9 @@ class SMNetTrainer:
         logging.basicConfig(level=logging.INFO)
 
     def fit(self, train_loader, val_loader, epochs):
+        logging.info(
+            f"""Used device: {self.device} """
+        )
         # track total training time
         total_start_time = time.time()
         # training
@@ -122,3 +129,35 @@ class SMNetTrainer:
             dev = device
 
         return dev
+
+    def save_experiment(self, experiments_dir: Path):
+        if not experiments_dir.exists():
+            experiments_dir.mkdir(parents=True, exist_ok=True)
+
+        cur_experiment_dir = experiments_dir / self.experiment_name
+        cur_experiment_dir.mkdir(parents=True, exist_ok=True)
+        current_training_config = get_train_config()
+        save_to_json(current_training_config, str(cur_experiment_dir/"_train_config.json"))
+
+        # save train-val loss graph
+        # Plotting the training loss
+        plt.subplot(1, 2, 1)  # Create a subplot for the first plot (training loss)
+        plt.plot(self.train_loss_, 'r-', label='Training Loss')  # 'r-' denotes red color and line style
+        plt.title('Training Loss')  # Set the title for the training loss plot
+        plt.xlabel('Epochs')  # Label for the x-axis
+        plt.ylabel('Loss')  # Label for the y-axis
+        plt.legend()  # Show the legend
+
+        # Plotting the validation loss
+        plt.subplot(1, 2, 2)  # Create a subplot for the second plot (validation loss)
+        plt.plot(self.val_loss_, 'b-', label='Validation Loss')  # 'b-' denotes blue color and line style
+        plt.title('Validation Loss')  # Set the title for the validation loss plot
+        plt.xlabel('Epochs')  # Label for the x-axis
+        plt.ylabel('Loss')  # Label for the y-axis
+        plt.legend()  # Show the legend
+
+        # Display the plot
+        plt.tight_layout()  # Adjust the layout to avoid overlapping labels
+        plt.savefig(str(cur_experiment_dir / "loss_plot.png"))
+
+

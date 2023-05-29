@@ -4,7 +4,7 @@
   "TEST_SIZE": 0.1,
   "VAL_SIZE": 0.2,
   "EPOCH": 100,
-  "LEARNING_RATE": 1e-5,
+  "LEARNING_RATE": 1e-3,
   "SHUFFLE_DATASET": true,
   "DEVICE": "cpu",
   "TRANSFORM_WEIGHT": 0.6,

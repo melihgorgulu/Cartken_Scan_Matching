@@ -5,6 +5,7 @@ from utils.config import get_train_config
 import torch
 from training.losses import CombinedLoss
 from model.networks import BasicSMNetwork
+from pathlib import Path
 
 
 def test_trainer():
@@ -29,13 +30,14 @@ def test_trainer():
     # For the sake of testing, use test set, because it smaller, one epoch will take less iteration.
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=shuffle)
     val_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
-    logger_kwargs = {'update_step': 20, 'show': True}
+    logger_kwargs = {'update_step': 1, 'show': True}
 
     model = BasicSMNetwork()
     criterion = CombinedLoss(transform_w=l2_loss_weight, match_w=bce_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs, device=device)
     trainer.fit(train_loader=test_loader, val_loader=val_loader, epochs=epoch)
+    trainer.save_experiment(experiments_dir=Path("experiments"))
 
 
 if __name__ == "__main__":
