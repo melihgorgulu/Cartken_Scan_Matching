@@ -26,7 +26,7 @@ class ScanMatchingDataSet(Dataset):
         :param item_idx: Index of item to be fetched
         :return: image tensor, translated image tensor, gt tensor
         """
-        choice = random.choices([1, 0], weights=[1, 0])[0]
+        choice = random.choices([1, 0], weights=[0.6, 0.4])[0]
         if choice == 1:
             cur_item_lbl: Dict = self.labels[item_idx]
             cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
