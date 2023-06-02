@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 from utils.config import get_data_config
 import random
+from torchvision.transforms import transforms
 
 
 class ScanMatchingDataSet(Dataset):
@@ -25,7 +26,7 @@ class ScanMatchingDataSet(Dataset):
         :param item_idx: Index of item to be fetched
         :return: image tensor, translated image tensor, gt tensor
         """
-        choice = random.choices([1, 0], weights=[0.6, 0.4])[0]
+        choice = random.choices([1, 0], weights=[1, 0])[0]
         if choice == 1:
             cur_item_lbl: Dict = self.labels[item_idx]
             cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
@@ -35,7 +36,16 @@ class ScanMatchingDataSet(Dataset):
             gt_transformation = torch.tensor([cos_gt, sin_gt, tx_gt, ty_gt], dtype=torch.float32)
             gt_is_matched = torch.tensor([1.0], dtype=torch.float32)
 
-            return load_to_tensor(cur_im_path), load_to_tensor(cur_trans_img_path), gt_is_matched, gt_transformation
+            cur_im_tensor = load_to_tensor(cur_im_path)
+            cur_trans_tensor = load_to_tensor(cur_trans_img_path)
+            # normalize the images
+            normalize = transforms.Normalize(mean=torch.mean(cur_im_tensor), std=torch.std(cur_im_tensor))
+            cur_im_tensor = normalize(cur_im_tensor)
+
+            normalize = transforms.Normalize(mean=torch.mean(cur_trans_tensor), std=torch.std(cur_trans_tensor))
+            cur_trans_tensor = normalize(cur_trans_tensor)
+
+            return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
         else:
             cur_item_lbl: Dict = self.labels[item_idx]
             cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
@@ -47,5 +57,15 @@ class ScanMatchingDataSet(Dataset):
             nan_match_target_item_lbl: Dict = self.labels[random_idx]
             nan_match_trans_img_path = self.data_dir / "transformed_patches" / nan_match_target_item_lbl[
                 'translated_patch_name']
-            return load_to_tensor(cur_im_path), load_to_tensor(
-                nan_match_trans_img_path), gt_is_matched, gt_transformation
+
+            cur_im_tensor = load_to_tensor(cur_im_path)
+            cur_non_match_trans_tensor = load_to_tensor(nan_match_trans_img_path)
+            # normalize the images
+            normalize = transforms.Normalize(mean=torch.mean(cur_im_tensor), std=torch.std(cur_im_tensor))
+            cur_im_tensor = normalize(cur_im_tensor)
+
+            normalize = transforms.Normalize(mean=torch.mean(cur_non_match_trans_tensor),
+                                             std=torch.std(cur_non_match_trans_tensor))
+            cur_trans_tensor = normalize(cur_non_match_trans_tensor)
+
+            return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation

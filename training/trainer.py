@@ -130,6 +130,11 @@ class SMNetTrainer:
 
         return dev
 
+    def save_model(self, path: Path):
+        if not path.parent.exists():
+            path.mkdir(parents=True, exist_ok=True)
+        torch.save(self.model.state_dict(), path)
+
     def save_experiment(self, experiments_dir: Path):
         if not experiments_dir.exists():
             experiments_dir.mkdir(parents=True, exist_ok=True)
@@ -137,7 +142,7 @@ class SMNetTrainer:
         cur_experiment_dir = experiments_dir / self.experiment_name
         cur_experiment_dir.mkdir(parents=True, exist_ok=True)
         current_training_config = get_train_config()
-        save_to_json(current_training_config, str(cur_experiment_dir/"_train_config.json"))
+        save_to_json(current_training_config, str(cur_experiment_dir / "_train_config.json"))
 
         # save train-val loss graph
         # Plotting the training loss
@@ -159,5 +164,3 @@ class SMNetTrainer:
         # Display the plot
         plt.tight_layout()  # Adjust the layout to avoid overlapping labels
         plt.savefig(str(cur_experiment_dir / "loss_plot.png"))
-
-

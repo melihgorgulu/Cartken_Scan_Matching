@@ -26,6 +26,7 @@ def train():
     dataset = ScanMatchingDataSet()
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
+
     # dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
     val_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
@@ -34,13 +35,16 @@ def train():
     # define the model
     model = BasicSMNetwork()
     # loss and optimizer
-    criterion = CombinedLoss(transform_loss_weight, match_loss_weight)
+    criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     # define the trainer
-    logger_kwargs = {'update_step': 20, 'show': True}
-    trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs, device=device)
-    trainer.fit(train_loader=test_loader, val_loader=val_loader, epochs=epoch)
+    experiment_name = "test1"
+    logger_kwargs = {'update_step': 1, 'show': True}
+    trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
+                           device=device, experiment_name=experiment_name)
+    trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
+    trainer.save_model(Path(f"trained_models/{experiment_name}.pt"))
 
 
 if __name__ == "__main__":
