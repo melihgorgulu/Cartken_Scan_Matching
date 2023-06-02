@@ -56,7 +56,13 @@ class FeatureMatcherHead(nn.Module):
 
     def forward(self, x):
         x = self.fcn(x)
-        x = F.sigmoid(x)  # probability
+        # We are using BCEWithLogitsLoss, so remove the last sigmoid layer
+        # x = F.sigmoid(x)  # probability
+        """This loss combines a `Sigmoid` layer and the `BCELoss` in one single class. 
+        This version is more numerically stable than using a plain `Sigmoid` followed by a `BCELoss` as, 
+        by combining the operations into one layer, we take advantage of the 
+        log-sum-exp trick for numerical stability."""
+
         return x
 
 
