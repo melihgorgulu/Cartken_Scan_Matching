@@ -18,13 +18,12 @@ import random
 from torch import nn
 
 
-def test_trainer():
+def test_model_training():
     # data params
     train_config = get_train_config()
-    train_size, val_size, test_size = train_config["TRAIN_SIZE"], train_config["VAL_SIZE"], train_config["TEST_SIZE"]
     shuffle = train_config["SHUFFLE_DATASET"]
-    l2_loss_weight = train_config["TRANSFORM_WEIGHT"]
-    bce_loss_weight = train_config["MATCH_WEIGHT"]
+    transform_loss_weight = train_config["TRANSFORM_WEIGHT"]
+    match_loss_weight = train_config["MATCH_WEIGHT"]
 
     # training params
     # batch_size = train_config["BATCH_SIZE"]
@@ -44,12 +43,13 @@ def test_trainer():
     logger_kwargs = {'update_step': 1, 'show': True}
 
     model = BasicSMNetwork()
-    criterion = CombinedLoss(transform_w=l2_loss_weight, match_w=bce_loss_weight)
+    criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs, device=device)
+    trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
+                           device=device, show_all_losses=True)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
 
 
 if __name__ == "__main__":
-    test_trainer()
+    test_model_training()

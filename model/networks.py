@@ -1,3 +1,4 @@
+
 import torch
 from torch import nn, concat
 import torch.nn.functional as F
@@ -65,8 +66,7 @@ class TransformPredictorHead(nn.Module):
         self.fcn = nn.Linear(512, 4)
 
     def forward(self, x):
-        x = self.fcn(x)
-        x = F.relu(x)  # 4 values
+        x = self.fcn(x)  # 4 values
         return x
 
 

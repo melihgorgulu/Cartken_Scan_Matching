@@ -24,7 +24,7 @@ def test_combined_loss():
         prediction = model(cur_img_batch, cur_trans_img_batch)
         gt = (cur_gt_match_batch, cur_gt_trans_batch)
         criterion = CombinedLoss()
-        loss = criterion(prediction, gt)
+        loss, loss_info = criterion(prediction, gt)
         print("Calculated loss: ")
         print(loss.item())
         break

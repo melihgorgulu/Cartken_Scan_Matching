@@ -12,19 +12,25 @@ import matplotlib.pyplot as plt
 
 class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
-                 logger_kwargs: Dict, device: Optional[str] = None, experiment_name: Optional[str] = "test"):
+                 logger_kwargs: Dict, device: Optional[str] = None, experiment_name: Optional[str] = "test",
+                 show_all_losses: bool = False):
 
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
         self.logger_kwargs = logger_kwargs
+        self.show_all_losses = show_all_losses
         self.device = self._get_device(device)
         self.experiment_name = experiment_name
         self.model.to(self.device)
 
         # attributes
-        self.train_loss_ = []
-        self.val_loss_ = []
+        self.train_loss_: List[float] = []
+        self.val_loss_: List[float] = []
+        # also store the loss info values. Each loss info is a dictionary that contains loss value for
+        # rotation, translation, match and combined for current step.
+        self.train_loss_info: List[Dict] = []
+        self.val_loss_info: List[Dict] = []
         logging.basicConfig(level=logging.INFO)
 
     def fit(self, train_loader, val_loader, epochs):
@@ -39,18 +45,23 @@ class SMNetTrainer:
             epoch_start_time = time.time()
 
             # train
-            tr_loss = self._train(train_loader)
+            tr_loss, tr_loss_info = self._train(train_loader)
 
             # validate
-            val_loss = self._validate(val_loader)
+            val_loss, val_loss_info = self._validate(val_loader)
 
             self.train_loss_.append(tr_loss)
             self.val_loss_.append(val_loss)
+
+            self.train_loss_info.append(tr_loss_info)
+            self.val_loss_info.append(val_loss_info)
 
             epoch_time = time.time() - epoch_start_time
             self._logger(
                 tr_loss,
                 val_loss,
+                tr_loss_info,
+                val_loss_info,
                 epoch + 1,
                 epochs,
                 epoch_time,
@@ -66,7 +77,9 @@ class SMNetTrainer:
 
     def _train(self, dataloader: DataLoader):
         self.model.train()
+        # to avoid warnings define them before for loop
         loss = 0.0
+        loss_info = {}
         for cur_data in dataloader:
             # move to device
             cur_data = self._to_device(cur_data, device=self.device)
@@ -75,7 +88,7 @@ class SMNetTrainer:
             prediction = self.model(cur_img_batch, cur_trans_img_batch)
 
             # loss
-            loss = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
+            loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
 
             # remove gradient from previous passes
             self.optimizer.zero_grad()
@@ -86,7 +99,7 @@ class SMNetTrainer:
             # parameters update
             self.optimizer.step()
 
-        return loss.item()
+        return loss.item(), loss_info
 
     def _validate(self, dataloader):
         self.model.eval()
@@ -97,23 +110,32 @@ class SMNetTrainer:
                 cur_data = self._to_device(cur_data, device=self.device)
                 cur_img_batch, cur_trans_img_batch, cur_gt_match_batch, cur_gt_trans_batch = cur_data
                 prediction = self.model(cur_img_batch, cur_trans_img_batch)
-                loss = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
+                loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
 
-        return loss.item()
+        return loss.item(), loss_info
 
     def _compute_combined_loss(self, pred: Tuple, gt: Tuple):
         # model returns matching probability and transform prediction.
-        combined_loss = self.criterion(pred, gt)
-        return combined_loss
+        combined_loss, loss_info = self.criterion(pred, gt)
+        return combined_loss, loss_info
 
-    def _logger(self, tr_loss, val_loss, epoch, epochs, epoch_time, show=True, update_step=20):
+    def _logger(self, tr_loss, val_loss, tr_loss_info, val_loss_info,
+                epoch, epochs, epoch_time, show=True, update_step=20):
         if show:
             if epoch % update_step == 0 or epoch == 1:
                 # to satisfy pep8 common limit of characters
-                msg = f"Epoch {epoch}/{epochs} | Train loss: {tr_loss}"
-                msg = f"{msg} | Validation loss: {val_loss}"
-                msg = f"{msg} | Time/epoch: {round(epoch_time, 5)} seconds"
-                logging.info(msg)
+                if self.show_all_losses:
+                    msg = f"Epoch {epoch}/{epochs} | Train combined loss: {tr_loss} | Match Loss: {tr_loss_info['match_loss']}, Rotation Loss: {tr_loss_info['rotation_loss']} | Translation Loss {tr_loss_info['translation_loss']}"
+
+                    msg = f"{msg} \nVal combined loss: {val_loss} | Match Loss: {val_loss_info['match_loss']}, Rotation Loss: {val_loss_info['rotation_loss']} | Translation Loss {val_loss_info['translation_loss']}"
+                    msg = f"{msg} | Time/epoch: {round(epoch_time, 5)} seconds"
+                    msg = msg + "\n" + "-"*100
+                    logging.info(msg)
+                else:
+                    msg = f"Epoch {epoch}/{epochs} | Train loss: {tr_loss}"
+                    msg = f"{msg} | Validation loss: {val_loss}"
+                    msg = f"{msg} | Time/epoch: {round(epoch_time, 5)} seconds"
+                    logging.info(msg)
 
     def _to_device(self, tensors: Tuple[torch.Tensor], device) -> List[torch.Tensor]:
         tensors = list(tensors)
