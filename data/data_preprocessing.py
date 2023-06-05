@@ -2,6 +2,7 @@ import os
 from torch import Tensor
 import math
 from utils.io_utils import *
+from utils.config import get_data_config
 from data_utils import calculate_patches
 from torchvision import transforms
 from typing import Tuple, List
@@ -117,7 +118,10 @@ def test_random_affine():
 
 
 def create_transformation_dataset():
-    random_affine_transform = RandomAffineTransform(deg_max=180, deg_min=-180, h_t=0.2, v_t=0.2)
+    data_config = get_data_config()
+    h_t = data_config['RANDOM_AFFINE_TX']
+    v_t = data_config['RANDOM_AFFINE_TY']
+    random_affine_transform = RandomAffineTransform(deg_max=180, deg_min=-180, h_t=h_t, v_t=v_t)
     patches_dir = Path(os.getenv("PATCH_SAVE_DIR"))
     gt_dict = {'data': []}
     for index, cur_patch_path in enumerate(patches_dir.iterdir()):

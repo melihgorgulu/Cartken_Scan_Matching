@@ -4,5 +4,7 @@
   "IMAGE_WIDTH": 300,
   "NUMBER_OF_CHANNEL": 1,
   "DATA_ROOT_DIR": "/Users/melihgorgulu/Desktop/Projects/Cartken/Cartken_Scan_Matching/data/dataset",
-  "LABELS_DIR": "/Users/melihgorgulu/Desktop/Projects/Cartken/Cartken_Scan_Matching/data/dataset/labels"
+  "LABELS_DIR": "/Users/melihgorgulu/Desktop/Projects/Cartken/Cartken_Scan_Matching/data/dataset/labels",
+  "RANDOM_AFFINE_TX": 0.2,
+  "RANDOM_AFFINE_TY": 0.2
 }
