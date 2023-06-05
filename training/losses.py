@@ -16,7 +16,7 @@ class CombinedLoss(nn.Module):
     def forward(self, pred: Tuple, gt: Tuple):
         gt_match, gt_transform = gt
         pred_match, pred_transform = pred
-        # TODO: Dont  calculate rotation and translation loss if the pairs are not matched.
+
         # DONE : Clamp the predicted values for BCE
 
         '''
@@ -41,9 +41,22 @@ class CombinedLoss(nn.Module):
         pred_translation, gt_translation = pred_transform[..., 2:], gt_transform[..., 2:]
 
         binary_match_loss = self.criterion_match(pred_match, gt_match)
-        rotation_loss = self.criterion_rotation(pred_rotation, gt_rotation)
-        translation_loss = self.criterion_translation(pred_translation, gt_translation)
-        transform_loss = rotation_loss + translation_loss
+
+        # DONE: Do not  calculate rotation and translation loss if the pairs are not matched.
+        # create a mask for not matched losses, discard non-matching items
+        match_mask_indices = [idx for idx, val in enumerate(gt_match[:, 0].tolist()) if val == 1.0]  # take the batch
+        if match_mask_indices:
+            rotation_loss = self.criterion_rotation(pred_rotation[match_mask_indices, ...],
+                                                    gt_rotation[match_mask_indices, ...])
+            translation_loss = self.criterion_translation(pred_translation[match_mask_indices, ...],
+                                                          gt_translation[match_mask_indices, ...])
+            transform_loss = rotation_loss + translation_loss
+        else:
+            # indicate that there is no matching pair in the batch
+            rotation_loss = -1
+            translation_loss = -1
+            transform_loss = 0
+
         out = self.wt * transform_loss + self.wm * binary_match_loss
 
         # return dictionary of losses
