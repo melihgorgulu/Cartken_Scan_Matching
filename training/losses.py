@@ -61,10 +61,10 @@ class CombinedLoss(nn.Module):
 
         # return dictionary of losses
         loss_info = {
-            "match_loss": binary_match_loss,
-            "rotation_loss": rotation_loss,
-            "translation_loss": translation_loss,
-            "transform_loss": transform_loss,
-            "combined_loss": out
+            "match_loss": binary_match_loss.item(),
+            "rotation_loss": rotation_loss.item() if type(rotation_loss) != int else rotation_loss,
+            "translation_loss": translation_loss.item() if type(translation_loss) != int else translation_loss,
+            "transform_loss": transform_loss.item() if type(transform_loss) != int else transform_loss,
+            "combined_loss": out.item()
         }
         return out, loss_info

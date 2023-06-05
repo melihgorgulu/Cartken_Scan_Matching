@@ -4,6 +4,8 @@ from torchvision import transforms
 from pathlib import Path
 from torchvision.utils import save_image
 import json
+import matplotlib.pyplot as plt
+from typing import List
 
 
 def convert_pil_to_tensor(img: Image, mode='gray') -> torch.Tensor:
@@ -49,3 +51,24 @@ def load_to_tensor(image_path: Path) -> torch.Tensor:
     # Convert the image to a PyTorch tensor
     tensor = convert_pil_to_tensor(image)
     return tensor
+
+
+def save_loss_graph(save_path: Path, train_loss, val_loss, titles: List[str], labels: List[str]):
+    plt.subplot(1, 2, 1)  # Create a subplot for the first plot (training loss)
+    plt.plot(train_loss, 'r-', label=labels[0])  # 'r-' denotes red color and line style
+    plt.title(titles[0])  # Set the title for the training loss plot
+    plt.xlabel('Epochs')  # Label for the x-axis
+    plt.ylabel('Loss')  # Label for the y-axis
+    plt.legend()  # Show the legend
+
+    # Plotting the validation loss
+    plt.subplot(1, 2, 2)  # Create a subplot for the second plot (validation loss)
+    plt.plot(val_loss, 'b-', label=labels[1])  # 'b-' denotes blue color and line style
+    plt.title(titles[1])  # Set the title for the validation loss plot
+    plt.xlabel('Epochs')  # Label for the x-axis
+    plt.ylabel('Loss')  # Label for the y-axis
+    plt.legend()  # Show the legend
+
+    # Display the plot
+    plt.tight_layout()  # Adjust the layout to avoid overlapping labels
+    plt.savefig(str(save_path))

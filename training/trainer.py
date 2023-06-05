@@ -5,7 +5,7 @@ from typing import Optional, Dict, Tuple, List
 import time
 from torch.utils.data import DataLoader
 from pathlib import Path
-from utils.io_utils import save_to_json
+from utils.io_utils import save_to_json, save_loss_graph
 from utils.config import get_train_config
 import matplotlib.pyplot as plt
 
@@ -166,23 +166,27 @@ class SMNetTrainer:
         current_training_config = get_train_config()
         save_to_json(current_training_config, str(cur_experiment_dir / "_train_config.json"))
 
-        # save train-val loss graph
-        # Plotting the training loss
-        plt.subplot(1, 2, 1)  # Create a subplot for the first plot (training loss)
-        plt.plot(self.train_loss_, 'r-', label='Training Loss')  # 'r-' denotes red color and line style
-        plt.title('Training Loss')  # Set the title for the training loss plot
-        plt.xlabel('Epochs')  # Label for the x-axis
-        plt.ylabel('Loss')  # Label for the y-axis
-        plt.legend()  # Show the legend
+        # save train-val combined loss graph
 
-        # Plotting the validation loss
-        plt.subplot(1, 2, 2)  # Create a subplot for the second plot (validation loss)
-        plt.plot(self.val_loss_, 'b-', label='Validation Loss')  # 'b-' denotes blue color and line style
-        plt.title('Validation Loss')  # Set the title for the validation loss plot
-        plt.xlabel('Epochs')  # Label for the x-axis
-        plt.ylabel('Loss')  # Label for the y-axis
-        plt.legend()  # Show the legend
-
-        # Display the plot
-        plt.tight_layout()  # Adjust the layout to avoid overlapping labels
-        plt.savefig(str(cur_experiment_dir / "loss_plot.png"))
+        save_loss_graph(save_path=cur_experiment_dir / "combined_loss_plot.png", train_loss=self.train_loss_,
+                        val_loss=self.val_loss_, titles=["Train Combined Loss", "Val Combined Loss"],
+                        labels=["train loss", "val_loss"])
+        # save rotation loss, match loss and translation loss
+        # rotation loss
+        rotation_loss_train = [i["rotation_loss"] for i in self.train_loss_info]
+        rotation_loss_val = [i["rotation_loss"] for i in self.val_loss_info]
+        save_loss_graph(save_path=cur_experiment_dir / "rotation_loss_plot.png", train_loss=rotation_loss_train,
+                        val_loss=rotation_loss_val, titles=["Train Rotation Loss", "Val Rotation Loss"],
+                        labels=["train loss", "val_loss"])
+        # translation loss
+        translation_loss_train = [i["translation_loss"] for i in self.train_loss_info]
+        translation_loss_val = [i["translation_loss"] for i in self.val_loss_info]
+        save_loss_graph(save_path=cur_experiment_dir / "translation_loss_plot.png", train_loss=translation_loss_train,
+                        val_loss=translation_loss_val, titles=["Train Translation Loss", "Val Translation Loss"],
+                        labels=["train loss", "val_loss"])
+        # match loss
+        match_loss_train = [i["match_loss"] for i in self.train_loss_info]
+        match_loss_val = [i["match_loss"] for i in self.val_loss_info]
+        save_loss_graph(save_path=cur_experiment_dir / "match_loss_plot.png", train_loss=match_loss_train,
+                        val_loss=match_loss_val, titles=["Train Match Loss", "Val Match Loss"],
+                        labels=["train loss", "val_loss"])
