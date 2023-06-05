@@ -7,13 +7,14 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from utils.io_utils import save_to_json, save_loss_graph
 from utils.config import get_train_config
-import matplotlib.pyplot as plt
 
 
+# TODO: Check out adding tanh for cosx and sinx prediction
+# TODO: There is a bug while plotting, fix that
 class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
-                 logger_kwargs: Dict, device: Optional[str] = None, experiment_name: Optional[str] = "test",
-                 show_all_losses: bool = False):
+                 logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
+                 experiment_name: Optional[str] = "test", show_all_losses: bool = False):
 
         self.model = model
         self.criterion = criterion
@@ -22,6 +23,7 @@ class SMNetTrainer:
         self.show_all_losses = show_all_losses
         self.device = self._get_device(device)
         self.experiment_name = experiment_name
+        self.train_stats_config = train_stats_config
         self.model.to(self.device)
 
         # attributes
@@ -34,6 +36,7 @@ class SMNetTrainer:
         logging.basicConfig(level=logging.INFO)
 
     def fit(self, train_loader, val_loader, epochs):
+
         logging.info(
             f"""Used device: {self.device} """
         )
@@ -80,10 +83,16 @@ class SMNetTrainer:
         # to avoid warnings define them before for loop
         loss = 0.0
         loss_info = {}
+        tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
         for cur_data in dataloader:
             # move to device
             cur_data = self._to_device(cur_data, device=self.device)
             cur_img_batch, cur_trans_img_batch, cur_gt_match_batch, cur_gt_trans_batch = cur_data
+            # normalize translation values before giving it to the model
+            # normalize tx (between -1 to +1)
+            cur_gt_trans_batch[..., 2] = cur_gt_trans_batch[..., 2] / tx_max
+            # normalize ty
+            cur_gt_trans_batch[..., 3] = cur_gt_trans_batch[..., 3] / ty_max
             # forward pass
             prediction = self.model(cur_img_batch, cur_trans_img_batch)
 
@@ -129,7 +138,7 @@ class SMNetTrainer:
 
                     msg = f"{msg} \nVal combined loss: {val_loss} | Match Loss: {val_loss_info['match_loss']}, Rotation Loss: {val_loss_info['rotation_loss']} | Translation Loss {val_loss_info['translation_loss']}"
                     msg = f"{msg} | Time/epoch: {round(epoch_time, 5)} seconds"
-                    msg = msg + "\n" + "-"*100
+                    msg = msg + "\n" + "-" * 100
                     logging.info(msg)
                 else:
                     msg = f"Epoch {epoch}/{epochs} | Train loss: {tr_loss}"

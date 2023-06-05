@@ -9,7 +9,7 @@ with few data, test if network can generalize bit.
 from data_model import ScanMatchingDataSet
 from torch.utils.data import DataLoader
 from training.trainer import SMNetTrainer
-from utils.config import get_train_config
+from utils.config import get_train_config, get_stats_config
 import torch
 from training.losses import CombinedLoss
 from model.networks import BasicSMNetwork
@@ -20,6 +20,7 @@ from torch import nn
 
 def test_model_training():
     # data params
+    stats_config = get_stats_config()
     train_config = get_train_config()
     shuffle = train_config["SHUFFLE_DATASET"]
     transform_loss_weight = train_config["TRANSFORM_WEIGHT"]
@@ -46,7 +47,7 @@ def test_model_training():
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
-                           device=device, show_all_losses=True)
+                           device=device, train_stats_config=stats_config, show_all_losses=True)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
 

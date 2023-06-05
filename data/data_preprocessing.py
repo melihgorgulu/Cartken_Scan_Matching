@@ -148,7 +148,7 @@ def create_transformation_dataset():
 
 
 def main():
-    # create_patch_dataset(root_dir=Path(os.getenv("ROOT_DIR")))
+    create_patch_dataset(root_dir=Path(os.getenv("ROOT_DIR")))
     create_transformation_dataset()
     print('Done!')
 
