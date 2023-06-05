@@ -117,7 +117,7 @@ def test_random_affine():
 
 
 def create_transformation_dataset():
-    random_affine_transform = RandomAffineTransform(deg_max=180, deg_min=-180, h_t=0.1, v_t=0.3)
+    random_affine_transform = RandomAffineTransform(deg_max=180, deg_min=-180, h_t=0.2, v_t=0.2)
     patches_dir = Path(os.getenv("PATCH_SAVE_DIR"))
     gt_dict = {'data': []}
     for index, cur_patch_path in enumerate(patches_dir.iterdir()):
@@ -144,7 +144,7 @@ def create_transformation_dataset():
 
 
 def main():
-    create_patch_dataset(root_dir=Path(os.getenv("ROOT_DIR")))
+    # create_patch_dataset(root_dir=Path(os.getenv("ROOT_DIR")))
     create_transformation_dataset()
     print('Done!')
 
