@@ -54,6 +54,7 @@ def load_to_tensor(image_path: Path) -> torch.Tensor:
 
 
 def save_loss_graph(save_path: Path, train_loss, val_loss, titles: List[str], labels: List[str]):
+    plt.figure()
     plt.subplot(1, 2, 1)  # Create a subplot for the first plot (training loss)
     plt.plot(train_loss, 'r-', label=labels[0])  # 'r-' denotes red color and line style
     plt.title(titles[0])  # Set the title for the training loss plot
