@@ -10,12 +10,13 @@ from torchvision.transforms import transforms
 
 class ScanMatchingDataSet(Dataset):
 
-    def __init__(self, return_matched_data_prob: int = 0.6):
+    def __init__(self, return_matched_data_prob: float = 0.6, transform=None):
         data_config = get_data_config()
         self.data_dir = Path(data_config['DATA_ROOT_DIR'])
         self.lbl_path = Path(data_config['LABELS_DIR'])
         self.labels: List = read_json(self.lbl_path / "lbl.json")['data']
         self.prob = return_matched_data_prob
+        self.transform = transform
 
     def __len__(self):
         return len(self.labels)
@@ -26,7 +27,7 @@ class ScanMatchingDataSet(Dataset):
         :param item_idx: Index of item to be fetched
         :return: image tensor, translated image tensor, gt tensor
         """
-        choice = random.choices([1, 0], weights=[0.6, 0.4])[0]
+        choice = random.choices([1, 0], weights=[self.prob, 1.0 - self.prob])[0]
         if choice == 1:
             cur_item_lbl: Dict = self.labels[item_idx]
             cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
@@ -38,12 +39,9 @@ class ScanMatchingDataSet(Dataset):
 
             cur_im_tensor = load_to_tensor(cur_im_path)
             cur_trans_tensor = load_to_tensor(cur_trans_img_path)
-            # normalize the images
-            normalize = transforms.Normalize(mean=torch.mean(cur_im_tensor), std=torch.std(cur_im_tensor))
-            cur_im_tensor = normalize(cur_im_tensor)
-
-            normalize = transforms.Normalize(mean=torch.mean(cur_trans_tensor), std=torch.std(cur_trans_tensor))
-            cur_trans_tensor = normalize(cur_trans_tensor)
+            if self.transform:
+                cur_im_tensor = self.transform(cur_im_tensor)
+                cur_trans_tensor = self.transform(cur_trans_tensor)
 
             return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
         else:
@@ -59,13 +57,25 @@ class ScanMatchingDataSet(Dataset):
                 'translated_patch_name']
 
             cur_im_tensor = load_to_tensor(cur_im_path)
-            cur_non_match_trans_tensor = load_to_tensor(nan_match_trans_img_path)
-            # normalize the images
-            normalize = transforms.Normalize(mean=torch.mean(cur_im_tensor), std=torch.std(cur_im_tensor))
-            cur_im_tensor = normalize(cur_im_tensor)
-
-            normalize = transforms.Normalize(mean=torch.mean(cur_non_match_trans_tensor),
-                                             std=torch.std(cur_non_match_trans_tensor))
-            cur_trans_tensor = normalize(cur_non_match_trans_tensor)
+            cur_trans_tensor = load_to_tensor(nan_match_trans_img_path)
+            if self.transform:
+                cur_im_tensor = self.transform(cur_im_tensor)
+                cur_trans_tensor = self.transform(cur_trans_tensor)
 
             return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
+
+
+class DatasetFromSubset(Dataset):
+    def __init__(self, subset, transform=None):
+        self.subset = subset
+        self.transform = transform
+
+    def __getitem__(self, index):
+        im, im_trans, gt_is_matched, gt_trans = self.subset[index]
+        if self.transform:
+            im = self.transform(im)
+            im_trans = self.transform(im_trans)
+        return im, im_trans, gt_is_matched, gt_trans
+
+    def __len__(self):
+        return len(self.subset)
