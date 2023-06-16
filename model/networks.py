@@ -11,6 +11,11 @@ IMAGE_SIZE = _data_config["IMAGE_HEIGHT"]
 BATCH_SIZE = _data_config["BATCH_SIZE"]
 N_OF_CH = _data_config["NUMBER_OF_CHANNEL"]
 
+def get_input_shape():
+    input_shape = (BATCH_SIZE, N_OF_CH, IMAGE_SIZE, IMAGE_SIZE)
+    return input_shape
+
+
 
 class BasicBackbone(nn.Module):
     """
@@ -22,37 +27,49 @@ class BasicBackbone(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels=N_OF_CH, out_channels=8,
                                kernel_size=3, padding="same", stride=1)
-        self.conv2 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding="same", stride=1)
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding="same", stride=1)
+        self.conv2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, padding="same", stride=1)
+        self.conv3 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding="same", stride=1)
 
         self.maxpool2d = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)  # reduce spatial dimension by half
         self.batchnorm2d_1 = nn.BatchNorm2d(num_features=8)
         self.batchnorm2d_2 = nn.BatchNorm2d(num_features=16)
-        self.batchnorm2d_3 = nn.BatchNorm2d(num_features=32)
+        #self.batchnorm2d_3 = nn.BatchNorm2d(num_features=32)
+        self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         x = self.conv1(x)
         x = F.relu(x)
+        x = self.dropout(x)
         x = self.maxpool2d(x)
         x = self.batchnorm2d_1(x)
 
         x = self.conv2(x)
         x = F.relu(x)
+        x = self.dropout(x)
         x = self.maxpool2d(x)
-        x = self.batchnorm2d_2(x)
+        x = self.batchnorm2d_1(x)
 
         x = self.conv3(x)
         x = F.relu(x)
+        x = self.dropout(x)
         x = self.maxpool2d(x)
-        x = self.batchnorm2d_3(x)
+        x = self.batchnorm2d_2(x)
 
         return x
+    
+    def get_output_shape(self):
+        input_shape = get_input_shape()
+        x = torch.randn(input_shape)
+        x = self.forward(x)
+        return x.shape
+        
+        
 
 
 class FeatureMatcherHead(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fcn = nn.Linear(512, 1)
+        self.fcn = nn.Linear(256, 1)
 
     def forward(self, x):
         x = self.fcn(x)
@@ -69,7 +86,7 @@ class FeatureMatcherHead(nn.Module):
 class TransformPredictorHead(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fcn = nn.Linear(512, 4)
+        self.fcn = nn.Linear(256, 4)
 
     def forward(self, x):
         x = self.fcn(x)  # 4 values
@@ -82,9 +99,12 @@ class BasicSMNetwork(nn.Module):
         self.transform_head = TransformPredictorHead()
         self.feature_matcher_head = FeatureMatcherHead()
         self.backbone = BasicBackbone()
+        backbone_output_shape = self.backbone.get_output_shape()
+        batch_size, ch, h, w = backbone_output_shape
         self.flatten = nn.Flatten()
-        self.fcn1 = nn.Linear(64 * 37 * 37, 1024)
-        self.fcn2 = nn.Linear(1024, 512)
+        self.fcn1 = nn.Linear(32 * 37 * 37, 512)
+        self.fcn2 = nn.Linear(512, 256)
+        self.dropout = nn.Dropout(p=0.5)
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # extract features
@@ -96,8 +116,10 @@ class BasicSMNetwork(nn.Module):
         f_flattened = self.flatten(f)
         x = self.fcn1(f_flattened)
         x = F.relu(x)
+        x = self.dropout(x)
         x = self.fcn2(x)
         x = F.relu(x)
+        x = self.dropout(x)
         # Feature matcher head
         match_prob = self.feature_matcher_head(x)
         # Transform predictor head
