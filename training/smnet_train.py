@@ -1,6 +1,8 @@
 import os
 
 from data.data_model import ScanMatchingDataSet
+from data.transforms import Standardize
+from data.data_model import DatasetFromSubset
 from torch.utils.data import DataLoader
 from utils.config import get_train_config, get_data_config, get_stats_config
 import torch
@@ -13,13 +15,11 @@ from pathlib import Path
 from typing import Dict, List
 from utils.io_utils import read_json, save_to_json
 from scripts.calculate_train_statistics import calculate_all_stats
-
-
-
+from torch.utils.data.dataset import random_split
+from torchvision.transforms import Compose
 
 
 def train(update_train_stats=False):
-
     train_config = get_train_config()
     # dataset params
     train_size, val_size, test_size = train_config["TRAIN_SIZE"], train_config["VAL_SIZE"], train_config["TEST_SIZE"]
@@ -33,10 +33,13 @@ def train(update_train_stats=False):
     epoch = train_config["EPOCH"]
 
     # train val and test split
-    dataset = ScanMatchingDataSet()
-    print(len(dataset))
-    train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size],
+    full_dataset = ScanMatchingDataSet()
+    train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
+    transform_train = Compose([Standardize(mean=0.1879, std=0.1834)])  # statistics calculated via using training set
+    train_dataset = DatasetFromSubset(train_dataset, transform=transform_train)
+    # Use train set statistics to prevent information leakage
+    val_dataset = DatasetFromSubset(val_dataset, transform=transform_train)
 
     # TODO: Right now we are calculating all stats, change it such that we just use train stats
     if update_train_stats:
@@ -51,8 +54,8 @@ def train(update_train_stats=False):
 
     # dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=shuffle)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=shuffle)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # define the model
     model = BasicSMNetwork()
