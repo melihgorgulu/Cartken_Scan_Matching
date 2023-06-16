@@ -10,7 +10,7 @@ from torchvision.transforms import transforms
 
 class ScanMatchingDataSet(Dataset):
 
-    def __init__(self, return_matched_data_prob: int = 0.6):
+    def __init__(self, return_matched_data_prob: float = 0.6):
         data_config = get_data_config()
         self.data_dir = Path(data_config['DATA_ROOT_DIR'])
         self.lbl_path = Path(data_config['LABELS_DIR'])
@@ -26,7 +26,7 @@ class ScanMatchingDataSet(Dataset):
         :param item_idx: Index of item to be fetched
         :return: image tensor, translated image tensor, gt tensor
         """
-        choice = random.choices([1, 0], weights=[0.6, 0.4])[0]
+        choice = random.choices([1, 0], weights=[self.prob, 1.0 - self.prob])[0]
         if choice == 1:
             cur_item_lbl: Dict = self.labels[item_idx]
             cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
