@@ -1,7 +1,7 @@
 import os
 
 from data.data_model import ScanMatchingDataSet
-from torch.utils.data import random_split, DataLoader
+from torch.utils.data import DataLoader
 from utils.config import get_train_config, get_data_config, get_stats_config
 import torch
 
@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Dict, List
 from utils.io_utils import read_json, save_to_json
 from scripts.calculate_train_statistics import calculate_all_stats
+
+
+
 
 
 def train(update_train_stats=False):
@@ -31,6 +34,7 @@ def train(update_train_stats=False):
 
     # train val and test split
     dataset = ScanMatchingDataSet()
+    print(len(dataset))
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
 
@@ -54,15 +58,15 @@ def train(update_train_stats=False):
     model = BasicSMNetwork()
     # loss and optimizer
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6)
     # define the trainer
-    experiment_name = "test1"
+    experiment_name = "test_model_droput_small_cnn_and_fcn_0.2_dropout_in_cnn_wd"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
-    trainer.save_model(Path(f"trained_models/{experiment_name}.pt"))
+    trainer.save_model(Path(f"trained_models"), name=experiment_name)
 
 
 if __name__ == "__main__":

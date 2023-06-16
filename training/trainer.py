@@ -112,13 +112,21 @@ class SMNetTrainer:
 
     def _validate(self, dataloader):
         self.model.eval()
-
+        tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
         with torch.no_grad():
             for cur_data in dataloader:
                 # move to device
                 cur_data = self._to_device(cur_data, device=self.device)
                 cur_img_batch, cur_trans_img_batch, cur_gt_match_batch, cur_gt_trans_batch = cur_data
+                # normalize translation values before giving it to the model
+                # normalize tx (between -1 to +1)
+                cur_gt_trans_batch[..., 2] = cur_gt_trans_batch[..., 2] / tx_max
+                # normalize ty
+                cur_gt_trans_batch[..., 3] = cur_gt_trans_batch[..., 3] / ty_max
+                # forward pass
                 prediction = self.model(cur_img_batch, cur_trans_img_batch)
+
+                # loss
                 loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
 
         return loss.item(), loss_info
@@ -161,10 +169,10 @@ class SMNetTrainer:
 
         return dev
 
-    def save_model(self, path: Path):
+    def save_model(self, path: Path, name: str):
         if not path.parent.exists():
             path.mkdir(parents=True, exist_ok=True)
-        torch.save(self.model.state_dict(), path)
+        torch.save(self.model.state_dict(), path / (name + ".pt"))
 
     def save_experiment(self, experiments_dir: Path):
         if not experiments_dir.exists():
