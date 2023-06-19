@@ -16,7 +16,6 @@ def get_input_shape():
     return input_shape
 
 
-
 class BasicBackbone(nn.Module):
     """
     Input: N, C , H , W
@@ -32,8 +31,8 @@ class BasicBackbone(nn.Module):
 
         self.maxpool2d = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)  # reduce spatial dimension by half
         self.batchnorm2d_1 = nn.BatchNorm2d(num_features=8)
-        self.batchnorm2d_2 = nn.BatchNorm2d(num_features=16)
-        #self.batchnorm2d_3 = nn.BatchNorm2d(num_features=32)
+        self.batchnorm2d_2 = nn.BatchNorm2d(num_features=8)
+
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
@@ -47,14 +46,12 @@ class BasicBackbone(nn.Module):
         x = F.relu(x)
         x = self.dropout(x)
         x = self.maxpool2d(x)
-        x = self.batchnorm2d_1(x)
+        x = self.batchnorm2d_2(x)
 
         x = self.conv3(x)
         x = F.relu(x)
         x = self.dropout(x)
         x = self.maxpool2d(x)
-        x = self.batchnorm2d_2(x)
-
         return x
     
     def get_output_shape(self):
@@ -63,8 +60,6 @@ class BasicBackbone(nn.Module):
         x = self.forward(x)
         return x.shape
         
-        
-
 
 class FeatureMatcherHead(nn.Module):
     def __init__(self):
@@ -102,7 +97,7 @@ class BasicSMNetwork(nn.Module):
         backbone_output_shape = self.backbone.get_output_shape()
         batch_size, ch, h, w = backbone_output_shape
         self.flatten = nn.Flatten()
-        self.fcn1 = nn.Linear(32 * 37 * 37, 512)
+        self.fcn1 = nn.Linear(2*ch * h * w, 512)
         self.fcn2 = nn.Linear(512, 256)
         self.dropout = nn.Dropout(p=0.5)
 
