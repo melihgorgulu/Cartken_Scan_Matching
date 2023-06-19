@@ -10,7 +10,6 @@ from utils.config import get_train_config
 
 
 # TODO: Check out adding tanh for cosx and sinx prediction
-# TODO: There is a bug while plotting, fix that
 class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
                  logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
@@ -35,6 +34,7 @@ class SMNetTrainer:
         self.val_loss_info: List[Dict] = []
         logging.basicConfig(level=logging.INFO)
 
+    # DONE: Calculate mean loss for each epoch
     def fit(self, train_loader, val_loader, epochs):
 
         logging.info(
@@ -80,10 +80,10 @@ class SMNetTrainer:
 
     def _train(self, dataloader: DataLoader):
         self.model.train()
-        # to avoid warnings define them before for loop
-        loss = 0.0
+        mean_loss = 0.0
         loss_info = {}
         tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
+        index = 0
         for cur_data in dataloader:
             # move to device
             cur_data = self._to_device(cur_data, device=self.device)
@@ -107,12 +107,16 @@ class SMNetTrainer:
 
             # parameters update
             self.optimizer.step()
-
-        return loss.item(), loss_info
+            mean_loss += loss.item()
+            index += 1
+        mean_loss = mean_loss / index
+        return mean_loss, loss_info
 
     def _validate(self, dataloader):
         self.model.eval()
         tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
+        mean_loss = 0.0
+        index = 0
         with torch.no_grad():
             for cur_data in dataloader:
                 # move to device
@@ -128,8 +132,10 @@ class SMNetTrainer:
 
                 # loss
                 loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
-
-        return loss.item(), loss_info
+                index += 1
+                mean_loss += loss.item()
+        mean_loss = mean_loss / index
+        return mean_loss, loss_info
 
     def _compute_combined_loss(self, pred: Tuple, gt: Tuple):
         # model returns matching probability and transform prediction.
