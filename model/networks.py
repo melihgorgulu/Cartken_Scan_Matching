@@ -97,7 +97,7 @@ class BasicSMNetwork(nn.Module):
         backbone_output_shape = self.backbone.get_output_shape()
         batch_size, ch, h, w = backbone_output_shape
         self.flatten = nn.Flatten()
-        self.fcn1 = nn.Linear(32 * 37 * 37, 512)
+        self.fcn1 = nn.Linear(2*ch * h * w, 512)
         self.fcn2 = nn.Linear(512, 256)
         self.dropout = nn.Dropout(p=0.5)
 
