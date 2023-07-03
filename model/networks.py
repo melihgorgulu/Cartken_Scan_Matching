@@ -24,33 +24,40 @@ class BasicBackbone(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(in_channels=N_OF_CH, out_channels=8,
-                               kernel_size=3, padding="same", stride=1)
-        self.conv2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, padding="same", stride=1)
-        self.conv3 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding="same", stride=1)
+        self.conv1 = nn.Conv2d(in_channels=N_OF_CH, out_channels=16, kernel_size=3, padding="same", stride=1)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding="same", stride=1)
+        
+        self.conv3 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding="same", stride=1)
+        self.conv4 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding="same", stride=1)
+        
+        self.conv5 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding="same", stride=1)
+        self.conv6 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding="same", stride=1)
 
         self.maxpool2d = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)  # reduce spatial dimension by half
-        self.batchnorm2d_1 = nn.BatchNorm2d(num_features=8)
-        self.batchnorm2d_2 = nn.BatchNorm2d(num_features=8)
+        self.batchnorm2d_1 = nn.BatchNorm2d(num_features=32)
+        self.batchnorm2d_2 = nn.BatchNorm2d(num_features=64)
 
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         x = self.conv1(x)
         x = F.relu(x)
-        x = self.dropout(x)
-        x = self.maxpool2d(x)
-        x = self.batchnorm2d_1(x)
-
         x = self.conv2(x)
         x = F.relu(x)
-        x = self.dropout(x)
         x = self.maxpool2d(x)
-        x = self.batchnorm2d_2(x)
-
+        x = self.batchnorm2d_1(x)
+        
         x = self.conv3(x)
         x = F.relu(x)
-        x = self.dropout(x)
+        x = self.conv4(x)
+        x = F.relu(x)
+        x = self.maxpool2d(x)
+        x = self.batchnorm2d_2(x)
+        
+        x = self.conv5(x)
+        x = F.relu(x)
+        x = self.conv6(x)
+        x = F.relu(x)
         x = self.maxpool2d(x)
         return x
     
@@ -64,10 +71,13 @@ class BasicBackbone(nn.Module):
 class FeatureMatcherHead(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fcn = nn.Linear(256, 1)
+        self.fcn1 = nn.Linear(256, 32)
+        self.fcn2 = nn.Linear(32, 1)
 
     def forward(self, x):
-        x = self.fcn(x)
+        x = self.fcn1(x)
+        x = F.relu(x)
+        x = self.fcn2(x)
         # We are using BCEWithLogitsLoss, so remove the last sigmoid layer
         # x = F.sigmoid(x)  # probability
         """This loss combines a `Sigmoid` layer and the `BCELoss` in one single class. 
@@ -95,7 +105,7 @@ class BasicSMNetwork(nn.Module):
         self.feature_matcher_head = FeatureMatcherHead()
         self.backbone = BasicBackbone()
         backbone_output_shape = self.backbone.get_output_shape()
-        batch_size, ch, h, w = backbone_output_shape
+        _, ch, h, w = backbone_output_shape
         self.flatten = nn.Flatten()
         self.fcn1 = nn.Linear(2*ch * h * w, 512)
         self.fcn2 = nn.Linear(512, 256)
@@ -111,10 +121,8 @@ class BasicSMNetwork(nn.Module):
         f_flattened = self.flatten(f)
         x = self.fcn1(f_flattened)
         x = F.relu(x)
-        x = self.dropout(x)
         x = self.fcn2(x)
         x = F.relu(x)
-        x = self.dropout(x)
         # Feature matcher head
         match_prob = self.feature_matcher_head(x)
         # Transform predictor head

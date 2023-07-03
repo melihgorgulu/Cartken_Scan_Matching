@@ -1,12 +1,12 @@
 {
-  "BATCH_SIZE": 64,
-  "TRAIN_SIZE": 0.7,
-  "TEST_SIZE": 0.1,
-  "VAL_SIZE": 0.2,
-  "EPOCH": 100,
+  "BATCH_SIZE": 128,
+  "TRAIN_SIZE": 0.9,
+  "TEST_SIZE": 0.05,
+  "VAL_SIZE": 0.05,
+  "EPOCH": 50,
   "LEARNING_RATE": 1e-3,
   "SHUFFLE_DATASET": true,
-  "DEVICE": "cpu",
-  "TRANSFORM_WEIGHT": 0.6,
-  "MATCH_WEIGHT": 0.4
+  "DEVICE": "cuda",
+  "TRANSFORM_WEIGHT": 0.5,
+  "MATCH_WEIGHT": 0.5
 }
