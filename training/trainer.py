@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from utils.io_utils import save_to_json, save_loss_graph
 from utils.config import get_train_config
+from training.early_stopping import EarlyStopper
 
 
 # TODO: Check out adding tanh for cosx and sinx prediction
@@ -36,7 +37,7 @@ class SMNetTrainer:
 
     # DONE: Calculate mean loss for each epoch
     def fit(self, train_loader, val_loader, epochs):
-
+        early_stopper = EarlyStopper(patience=3, min_delta=0.1)
         logging.info(
             f"""Used device: {self.device} """
         )
@@ -70,6 +71,10 @@ class SMNetTrainer:
                 epoch_time,
                 **self.logger_kwargs
             )
+            
+            if early_stopper.early_stop(validation_loss=val_loss):
+                        logging.info("Early Stopping.")
+                        break
 
         total_time = time.time() - total_start_time
 
