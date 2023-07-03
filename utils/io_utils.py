@@ -6,6 +6,8 @@ from torchvision.utils import save_image
 import json
 import matplotlib.pyplot as plt
 from typing import List
+import math
+from torchvision.transforms.functional import affine
 
 
 def convert_pil_to_tensor(img: Image, mode='gray') -> torch.Tensor:
@@ -73,3 +75,31 @@ def save_loss_graph(save_path: Path, train_loss, val_loss, titles: List[str], la
     # Display the plot
     plt.tight_layout()  # Adjust the layout to avoid overlapping labels
     plt.savefig(str(save_path))
+
+
+def revert_image_transform(img: torch.Tensor, transformation: torch.Tensor):
+    """
+    Given transformed image ant applied transformation, returns the original image
+    :param img: transformed image
+    :param transformation: used transformation matrix
+    :return: original image
+    """
+    cost, sint, tx, ty = transformation
+
+    # calculate radian
+    deg_cos = math.degrees(math.acos(cost))
+    deg_sin = math.degrees(math.asin(sint))
+
+    deg = None
+    if deg_cos > 0 and deg_sin > 0:
+        deg = deg_cos
+    elif deg_sin < 0:
+        deg = -deg_cos
+
+    deg_inv = -deg
+    translate_inv = [-tx, -ty]
+    # first translate back
+    reverted_img = affine(img, angle=0, translate=translate_inv, scale=1.0, shear=[0.0, 0.0])
+    # then rotate
+    reverted_img = affine(reverted_img, angle=deg_inv, translate=[0, 0], scale=1.0, shear=[0.0, 0.0])
+    return reverted_img
