@@ -66,7 +66,8 @@ def train(update_train_stats=False):
     experiment_name = "test_model_droput_small_cnn_and_fcn_0.2_dropout_in_cnn_wd"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
-                           device=device, train_stats_config=stats_config, experiment_name=experiment_name)
+                           device=device, train_stats_config=stats_config, experiment_name=experiment_name,
+                           vis_predictions_every_n=1)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
     trainer.save_model(Path(f"trained_models"), name=experiment_name)

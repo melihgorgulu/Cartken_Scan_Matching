@@ -5,16 +5,18 @@ from typing import Optional, Dict, Tuple, List
 import time
 from torch.utils.data import DataLoader
 from pathlib import Path
-from utils.io_utils import save_to_json, save_loss_graph
+from utils.io_utils import save_to_json, save_loss_graph, revert_image_transform, convert_tensor_to_pil
 from utils.config import get_train_config
 from training.early_stopping import EarlyStopper
+import random
+from PIL import Image
 
 
 # TODO: Check out adding tanh for cosx and sinx prediction
 class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
                  logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
-                 experiment_name: Optional[str] = "test", show_all_losses: bool = False):
+                 experiment_name: Optional[str] = "test", show_all_losses: bool = False, vis_predictions_every_n=None):
 
         self.model = model
         self.criterion = criterion
@@ -24,6 +26,7 @@ class SMNetTrainer:
         self.device = self._get_device(device)
         self.experiment_name = experiment_name
         self.train_stats_config = train_stats_config
+        self.vis_predictions_every_n = vis_predictions_every_n
         self.model.to(self.device)
 
         # attributes
@@ -43,12 +46,50 @@ class SMNetTrainer:
         )
         # track total training time
         total_start_time = time.time()
+
+        if self.vis_predictions_every_n:
+            tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
+            vis_data = next(iter(train_loader))
+            cur_img_batch, cur_trans_img_batch, cur_gt_match_batch, cur_gt_trans_batch = vis_data
+            cur_gt_trans_batch[..., 2] = cur_gt_trans_batch[..., 2] / tx_max
+            # normalize ty
+            cur_gt_trans_batch[..., 3] = cur_gt_trans_batch[..., 3] / ty_max
+
+            random.seed(1028)
+            random_index = random.randint(0, cur_gt_trans_batch.shape[0], )
+            img = cur_img_batch[random_index, ...]
+            trans_img = cur_trans_img_batch[random_index, ...]
         # training
         for epoch in range(epochs):
             # track epoch time
             epoch_start_time = time.time()
 
             # train
+            if self.vis_predictions_every_n:
+                if (epoch % self.vis_predictions_every_n) == 0:
+                        # forward pass
+                        prediction = self.model(cur_img_batch, cur_trans_img_batch)
+                        # select sample from batch randomly
+                        pred_trans = prediction[1]
+                        pred = pred_trans[random_index, ...]
+                        predicted_image = revert_image_transform(trans_img, pred)
+
+                        # overlay images and save
+                        org_img = convert_tensor_to_pil(img)
+                        pred_img = convert_tensor_to_pil(predicted_image)
+                        overlay_img = Image.blend(org_img, pred_img, 0.5)
+                        save_dir = Path("experiments") / self.experiment_name / "predictions_vis"
+                        if not save_dir.exists():
+                            save_dir.mkdir(parents=True, exist_ok=True)
+                        save_path_overlay = save_dir / f"overlay_epoch_{epoch}_pred.png"
+                        overlay_img.save(save_path_overlay, "PNG")
+
+                        save_path_org = save_dir / f"epoch_{epoch}_org.png"
+                        pred_img.save(save_path_org, "PNG")
+
+                        save_path_pred = save_dir / f"epoch_{epoch}_pred.png"
+                        org_img.save(save_path_pred, "PNG")
+
             tr_loss, tr_loss_info = self._train(train_loader)
 
             # validate
