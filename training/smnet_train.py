@@ -98,7 +98,6 @@ def train(update_train_stats=False):
     # Use train set statistics to prevent information leakage
     val_dataset = DatasetFromSubset(val_dataset, transform=transform_train)
 
-    # TODO: Right now we are calculating all stats, change it such that we just use train stats
     if update_train_stats:
         data_config: Dict = get_data_config()
         lbl_path = Path(data_config['LABELS_DIR'])
@@ -120,14 +119,17 @@ def train(update_train_stats=False):
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6)
     # define the trainer
-    experiment_name = "19_06_23_16:04"
+    experiment_name = "07_07_23_15:50"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,
-                           vis_predictions_every_n=1, show_all_losses=True)
+                           vis_predictions_every_n=10, show_all_losses=True)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
-    trainer.save_model(Path(f"trained_models"), name=experiment_name)
+    model_save_path = Path(f"trained_models")
+    if not model_save_path.exists():
+        model_save_path.mkdir()
+    trainer.save_model(model_save_path, name=experiment_name)
 
 
 if __name__ == "__main__":

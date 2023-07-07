@@ -71,13 +71,13 @@ class BasicBackbone(nn.Module):
 class FeatureMatcherHead(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fcn1 = nn.Linear(256, 32)
-        self.fcn2 = nn.Linear(32, 1)
+        self.fcn1 = nn.Linear(32, 1)
+        # self.fcn2 = nn.Linear(32, 1)
 
     def forward(self, x):
         x = self.fcn1(x)
-        x = F.relu(x)
-        x = self.fcn2(x)
+        #x = F.relu(x)
+        #x = self.fcn2(x)
         # We are using BCEWithLogitsLoss, so remove the last sigmoid layer
         # x = F.sigmoid(x)  # probability
         """This loss combines a `Sigmoid` layer and the `BCELoss` in one single class. 
@@ -91,10 +91,12 @@ class FeatureMatcherHead(nn.Module):
 class TransformPredictorHead(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fcn = nn.Linear(256, 4)
+        self.fcn = nn.Linear(32, 4)
+        self.tanh = nn.Tanh()
 
     def forward(self, x):
         x = self.fcn(x)  # 4 values
+        x = self.tanh(x)
         return x
 
 
@@ -107,8 +109,8 @@ class BasicSMNetwork(nn.Module):
         backbone_output_shape = self.backbone.get_output_shape()
         _, ch, h, w = backbone_output_shape
         self.flatten = nn.Flatten()
-        self.fcn1 = nn.Linear(2*ch * h * w, 512)
-        self.fcn2 = nn.Linear(512, 256)
+        self.fcn1 = nn.Linear(2*ch * h * w, 64)
+        self.fcn2 = nn.Linear(64, 32)
         self.dropout = nn.Dropout(p=0.5)
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
