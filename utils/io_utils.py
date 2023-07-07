@@ -103,3 +103,62 @@ def revert_image_transform(img: torch.Tensor, transformation: torch.Tensor):
     # then rotate
     reverted_img = affine(reverted_img, angle=deg_inv, translate=[0, 0], scale=1.0, shear=[0.0, 0.0])
     return reverted_img
+
+def save_prediction_results(org_img: torch.Tensor, trans_img: torch.Tensor, 
+                            prediction_affine: torch.Tensor, 
+                            prediction_match: torch.Tensor, 
+                            experiment_name: str, epoch: int):
+    """_summary_
+        Save model prediction results for given epoch
+    Args:
+        org_img (torch.Tensor): _description_
+        trans_img (torch.Tensor): _description_
+        prediction_affine (torch.Tensor): _description_
+        prediction_match (torch.Tensor): _description_
+        experiment_name (str): _description_
+        epoch (int): _description_
+
+    """
+    save_dir = Path("experiments") / experiment_name / "predictions_vis" / f"epoch_{epoch}"
+    if not save_dir.exists():
+        save_dir.mkdir(parents=True, exist_ok=True)
+    batch_size = prediction_affine.shape[0]
+    for i in range(batch_size):
+        cost, sint, tx, ty = prediction_affine[i, ...]
+        match_score = prediction_match[i, ...]
+        predicted_image = revert_image_transform(trans_img[i,...], prediction_affine[i, ...])
+        # convert tensor to pil images for saving
+        cur_org_img = convert_tensor_to_pil(org_img[i,...])
+        cur_trans_img = convert_tensor_to_pil(trans_img[i,...])
+        cur_pred_img = convert_tensor_to_pil(predicted_image)
+        """
+        save_path_org = save_dir / f"epoch_{epoch}_data_{i}_original.png"
+        cur_org_img.save(save_path_org, "PNG")
+        
+        save_path_trans = save_dir / f"epoch_{epoch}_data_{i}_trans.png"
+        cur_trans_img.save(save_path_trans, "PNG")
+
+        save_path_pred = save_dir / f"epoch_{epoch}_data_{i}_pred_.png"
+        cur_pred_img.save(save_path_pred, "PNG")
+        
+        """
+        # Create a figure with three subplots arranged side by side
+        fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+        axs[0].imshow(cur_org_img)
+        axs[0].axis('off')  # Disable axes
+        axs[0].set_title("Original Image")
+        # Display the second image on the second subplot
+        axs[1].imshow(cur_trans_img)
+        axs[1].set_title("Trans Image")
+        axs[1].axis('off')  # Disable axes
+
+        # Display the third image on the third subplot
+        axs[2].imshow(cur_pred_img)
+        axs[2].set_title("Pred Image")
+        axs[2].axis('off')  # Disable axes
+
+        main_title = f"Match Score: {match_score.item():.2f}, Cost: {cost.item():.2f}, Sint: {sint.item():.2f}, Tx: {tx.item():.2f}, Ty: {ty.item():.2f}"
+        fig.suptitle(main_title, fontsize=12, fontweight='bold')
+        plt.tight_layout()
+        save_path = save_dir / f"epoch_{epoch}_data_{i}.png"
+        plt.savefig(str(save_path))
