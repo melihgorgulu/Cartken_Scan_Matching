@@ -50,7 +50,7 @@ class SMNetTrainer:
         if self.vis_predictions_every_n:
             tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
             vis_data = next(iter(train_loader))
-            cur_img_batch, cur_trans_img_batch, cur_gt_match_batch, cur_gt_trans_batch = vis_data
+            cur_img_batch, cur_trans_img_batch, _, cur_gt_trans_batch = vis_data
             cur_gt_trans_batch[..., 2] = cur_gt_trans_batch[..., 2] / tx_max
             # normalize ty
             cur_gt_trans_batch[..., 3] = cur_gt_trans_batch[..., 3] / ty_max
@@ -59,6 +59,14 @@ class SMNetTrainer:
             random_index = random.randint(0, cur_gt_trans_batch.shape[0], )
             img = cur_img_batch[random_index, ...]
             trans_img = cur_trans_img_batch[random_index, ...]
+            # add batch dim
+            img = torch.unsqueeze(img, 0)
+            trans_img = torch.unsqueeze(trans_img, 0)
+            
+            del cur_img_batch
+            del cur_trans_img_batch
+            del cur_gt_trans_batch
+            torch.cuda.empty_cache()
         # training
         for epoch in range(epochs):
             # track epoch time
@@ -68,13 +76,24 @@ class SMNetTrainer:
             if self.vis_predictions_every_n:
                 if (epoch % self.vis_predictions_every_n) == 0:
                         # forward pass
-                        prediction = self.model(cur_img_batch, cur_trans_img_batch)
+                        if len(img.shape) != 4:
+                            # add batch dim
+                            img = torch.unsqueeze(img, 0)
+                             
+                        if len(trans_img.shape) != 4:           
+                            trans_img = torch.unsqueeze(trans_img, 0)
+                        prediction = self.model(img.to(self.device), trans_img.to(self.device))
+                        # TODO: normalize back the translation values
+                        # remove batch dim
+                        img = img[0,...]
+                        trans_img = trans_img[0,...]
                         # select sample from batch randomly
                         pred_trans = prediction[1]
-                        pred = pred_trans[random_index, ...]
+                        pred = pred_trans[0, ...]
                         predicted_image = revert_image_transform(trans_img, pred)
 
                         # overlay images and save
+
                         org_img = convert_tensor_to_pil(img)
                         pred_img = convert_tensor_to_pil(predicted_image)
                         overlay_img = Image.blend(org_img, pred_img, 0.5)
@@ -84,10 +103,10 @@ class SMNetTrainer:
                         save_path_overlay = save_dir / f"overlay_epoch_{epoch}_pred.png"
                         overlay_img.save(save_path_overlay, "PNG")
 
-                        save_path_org = save_dir / f"epoch_{epoch}_org.png"
+                        save_path_org = save_dir / f"epoch_{epoch}_pred.png"
                         pred_img.save(save_path_org, "PNG")
 
-                        save_path_pred = save_dir / f"epoch_{epoch}_pred.png"
+                        save_path_pred = save_dir / f"epoch_{epoch}_org.png"
                         org_img.save(save_path_pred, "PNG")
 
             tr_loss, tr_loss_info = self._train(train_loader)
