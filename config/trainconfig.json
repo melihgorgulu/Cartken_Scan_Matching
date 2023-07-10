@@ -5,6 +5,7 @@
   "VAL_SIZE": 0.05,
   "EPOCH": 50,
   "LEARNING_RATE": 1e-3,
+  "WEIGHT_DECAY": 1e-6,
   "SHUFFLE_DATASET": true,
   "DEVICE": "cuda",
   "TRANSFORM_WEIGHT": 0.5,

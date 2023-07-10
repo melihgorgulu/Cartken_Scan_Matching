@@ -87,9 +87,12 @@ def train(update_train_stats=False):
     match_loss_weight = train_config["MATCH_WEIGHT"]
     device = train_config["DEVICE"]
     lr = train_config["LEARNING_RATE"]
+    wd = train_config["WEIGHT_DECAY"]
     epoch = train_config["EPOCH"]
 
     # train val and test split
+    import pdb
+    pdb.set_trace()
     full_dataset = ScanMatchingDataSet()
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
@@ -117,9 +120,9 @@ def train(update_train_stats=False):
     model = BasicSMNetwork()
     # loss and optimizer
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-6)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     # define the trainer
-    experiment_name = "07_07_23_15:50"
+    experiment_name = "07_07_23_16:11"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,
