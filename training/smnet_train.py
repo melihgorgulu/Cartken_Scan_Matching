@@ -40,9 +40,8 @@ def random_split(dataset, lengths,
 
     Optionally fix the generator for reproducible results, e.g.:
 
-    >>> random_split(range(10), [3, 7], generator=torch.Generator().manual_seed(42))
-    >>> random_split(range(30), [0.3, 0.3, 0.4], generator=torch.Generator(
-    ...   ).manual_seed(42))
+    random_split(range(10), [3, 7], generator=torch.Generator().manual_seed(42))
+    random_split(range(30), [0.3, 0.3, 0.4], generator=torch.Generator().manual_seed(42))
 
     Args:
         dataset (Dataset): Dataset to be split
@@ -91,8 +90,6 @@ def train(update_train_stats=False):
     epoch = train_config["EPOCH"]
 
     # train val and test split
-    import pdb
-    pdb.set_trace()
     full_dataset = ScanMatchingDataSet()
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
