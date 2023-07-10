@@ -16,7 +16,8 @@ from PIL import Image
 class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
                  logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
-                 experiment_name: Optional[str] = "test", show_all_losses: bool = False, vis_predictions_every_n=None):
+                 experiment_name: Optional[str] = "test", show_all_losses: bool = False, vis_predictions_every_n=None,
+                 vis_validation=False):
 
         self.model = model
         self.criterion = criterion
@@ -27,6 +28,7 @@ class SMNetTrainer:
         self.experiment_name = experiment_name
         self.train_stats_config = train_stats_config
         self.vis_predictions_every_n = vis_predictions_every_n
+        self.vis_validation = vis_validation
         self.model.to(self.device)
 
         # attributes
@@ -50,7 +52,10 @@ class SMNetTrainer:
 
         if self.vis_predictions_every_n:
             # take batch
-            vis_data = next(iter(train_loader))
+            if self.vis_validation:
+                vis_data = next(iter(val_loader))
+            else:
+                vis_data = next(iter(train_loader))
             cur_img_batch, cur_trans_img_batch, gt_is_matched, gt_transformation = vis_data
             k = 5 # take first k item from batch
             img = cur_img_batch[:k, ...]
