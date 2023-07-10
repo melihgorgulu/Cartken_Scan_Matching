@@ -104,28 +104,26 @@ def revert_image_transform(img: torch.Tensor, transformation: torch.Tensor):
     reverted_img = affine(reverted_img, angle=deg_inv, translate=[0, 0], scale=1.0, shear=[0.0, 0.0])
     return reverted_img
 
-def save_prediction_results(org_img: torch.Tensor, trans_img: torch.Tensor, 
+def save_prediction_results(org_img: torch.Tensor, trans_img: torch.Tensor,
+                            gt_match: torch.Tensor,
+                            gt_trans: torch.Tensor, 
                             prediction_affine: torch.Tensor, 
                             prediction_match: torch.Tensor, 
                             experiment_name: str, epoch: int):
     """_summary_
         Save model prediction results for given epoch
-    Args:
-        org_img (torch.Tensor): _description_
-        trans_img (torch.Tensor): _description_
-        prediction_affine (torch.Tensor): _description_
-        prediction_match (torch.Tensor): _description_
-        experiment_name (str): _description_
-        epoch (int): _description_
-
     """
     save_dir = Path("experiments") / experiment_name / "predictions_vis" / f"epoch_{epoch}"
     if not save_dir.exists():
         save_dir.mkdir(parents=True, exist_ok=True)
     batch_size = prediction_affine.shape[0]
     for i in range(batch_size):
+        cur_gt_match = gt_match[i, ...] 
+        gt_cost, gt_sint, gt_tx, gt_ty = gt_trans[i, ...]
         cost, sint, tx, ty = prediction_affine[i, ...]
         match_score = prediction_match[i, ...]
+        # we have logits for match score, apply sigmoid to it
+        match_score = torch.sigmoid(match_score)
         predicted_image = revert_image_transform(trans_img[i,...], prediction_affine[i, ...])
         # convert tensor to pil images for saving
         cur_org_img = convert_tensor_to_pil(org_img[i,...])
@@ -157,7 +155,7 @@ def save_prediction_results(org_img: torch.Tensor, trans_img: torch.Tensor,
         axs[2].set_title("Pred Image")
         axs[2].axis('off')  # Disable axes
 
-        main_title = f"Match Score: {match_score.item():.2f}, Cost: {cost.item():.2f}, Sint: {sint.item():.2f}, Tx: {tx.item():.2f}, Ty: {ty.item():.2f}"
+        main_title = f" Gt Match: {cur_gt_match.item():.2f}, Gt cost: {gt_cost.item():.2f}, Gt sint:{gt_sint.item():.2f}, Gt tx: {gt_tx.item():.2f}, Gt ty: {gt_ty.item():.2f} \n Pred Match: {match_score.item():.2f}, Pred cost: {cost.item():.2f}, Pred sint: {sint.item():.2f}, Pred tx: {tx.item():.2f}, Pred ty: {ty.item():.2f}"
         fig.suptitle(main_title, fontsize=12, fontweight='bold')
         plt.tight_layout()
         save_path = save_dir / f"epoch_{epoch}_data_{i}.png"

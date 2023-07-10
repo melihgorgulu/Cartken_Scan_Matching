@@ -119,7 +119,7 @@ def train(update_train_stats=False):
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     # define the trainer
-    experiment_name = "07_07_23_16:11"
+    experiment_name = "10_07_23_11:24"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,

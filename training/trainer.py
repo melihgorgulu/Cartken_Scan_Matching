@@ -12,7 +12,7 @@ import random
 from PIL import Image
 
 
-# TODO: Check out adding tanh for cosx and sinx prediction
+
 class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
                  logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
@@ -39,6 +39,7 @@ class SMNetTrainer:
         logging.basicConfig(level=logging.INFO)
 
     # DONE: Calculate mean loss for each epoch
+    # TODO: ADD GT TO PREDICTIONS VIS RESULTS AND APPLY SIGMOID TO MATCH LOGITS
     def fit(self, train_loader, val_loader, epochs):
         early_stopper = EarlyStopper(patience=5, min_delta=0.1)
         logging.info(
@@ -50,12 +51,16 @@ class SMNetTrainer:
         if self.vis_predictions_every_n:
             # take batch
             vis_data = next(iter(train_loader))
-            cur_img_batch, cur_trans_img_batch, _, _ = vis_data
+            cur_img_batch, cur_trans_img_batch, gt_is_matched, gt_transformation = vis_data
             k = 5 # take first k item from batch
             img = cur_img_batch[:k, ...]
             trans_img = cur_trans_img_batch[:k, ...]
+            gt_match = gt_is_matched[:k, ...]
+            gt_trans = gt_transformation[:k, ...]
             del cur_img_batch
             del cur_trans_img_batch
+            del gt_is_matched
+            del gt_transformation
             torch.cuda.empty_cache()
         # training
         for epoch in range(epochs):
@@ -82,7 +87,9 @@ class SMNetTrainer:
                         # normalize back the translation values 
                         prediction_affine[..., 2] = prediction_affine[..., 2] * tx_max
                         prediction_affine[..., 3] = prediction_affine[..., 3] * ty_max
-                        save_prediction_results(org_img=img, trans_img=trans_img, 
+                        save_prediction_results(org_img=img, trans_img=trans_img,
+                                                gt_match=gt_match,
+                                                gt_trans=gt_trans, 
                                                 prediction_affine=prediction_affine, 
                                                 prediction_match=prediction_match, 
                                                 experiment_name=self.experiment_name, epoch=epoch)
@@ -136,14 +143,15 @@ class SMNetTrainer:
             cur_gt_trans_batch[..., 2] = cur_gt_trans_batch[..., 2] / tx_max
             # normalize ty
             cur_gt_trans_batch[..., 3] = cur_gt_trans_batch[..., 3] / ty_max
+            
+            # remove gradient from previous passes
+            self.optimizer.zero_grad()
+            
             # forward pass
             prediction = self.model(cur_img_batch, cur_trans_img_batch)
 
             # loss
             loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
-
-            # remove gradient from previous passes
-            self.optimizer.zero_grad()
 
             # backprop
             loss.backward()
