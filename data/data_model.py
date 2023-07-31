@@ -74,7 +74,7 @@ class ScanMatchingDataSet(Dataset):
             if self.transform:
                 cur_im_tensor = self.transform(cur_im_tensor)
                 cur_trans_tensor = self.transform(cur_trans_tensor)
-
+                
             if self.use_resnet:
                 # make it 3 channel and resize
                 transform_resize = T.Resize(size = (224,224))
