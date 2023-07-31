@@ -27,3 +27,10 @@ class Standardize:
 
     def __call__(self, x):
         return (x - self.mean) / self.std
+    
+
+class ResNet50_Transforms:
+    """_summary_
+    Apply required transformations for resnet50
+    """
+    pass

@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from utils.config import get_train_config, get_data_config, get_stats_config
 import torch
 
-from model.networks import BasicSMNetwork
+from model.networks import BasicSMNetwork, SmNetwithResNetBackBone
 from training.losses import CombinedLoss
 from training.trainer import SMNetTrainer
 
@@ -90,7 +90,7 @@ def train(update_train_stats=False):
     epoch = train_config["EPOCH"]
 
     # train val and test split
-    full_dataset = ScanMatchingDataSet()
+    full_dataset = ScanMatchingDataSet(use_resnet=True, return_matched_data_prob=0.5)
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
     transform_train = Compose([Standardize(mean=0.1879, std=0.1834)])  # statistics calculated via using training set
@@ -114,16 +114,17 @@ def train(update_train_stats=False):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # define the model
-    model = BasicSMNetwork()
+    # model = BasicSMNetwork()
+    model = SmNetwithResNetBackBone()
     # loss and optimizer
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     # define the trainer
-    experiment_name = "test_temp"
+    experiment_name = "31_07_new_arch_with_resnet50_test_only_rot_and_trans"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,
-                           vis_predictions_every_n=10, show_all_losses=True)
+                           vis_predictions_every_n=None, show_all_losses=True)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
     model_save_path = Path(f"trained_models")

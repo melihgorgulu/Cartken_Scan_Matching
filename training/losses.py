@@ -57,7 +57,8 @@ class CombinedLoss(nn.Module):
             translation_loss = -1
             transform_loss = 0
 
-        out = self.wt * transform_loss + self.wm * binary_match_loss
+        #out = self.wt * transform_loss + self.wm * binary_match_loss
+        out = transform_loss
 
         # return dictionary of losses
         loss_info = {

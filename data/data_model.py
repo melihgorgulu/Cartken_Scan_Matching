@@ -5,18 +5,19 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 from utils.config import get_data_config
 import random
-from torchvision.transforms import transforms
+import torchvision.transforms as T
 
 
 class ScanMatchingDataSet(Dataset):
 
-    def __init__(self, return_matched_data_prob: float = 0.6, transform=None):
+    def __init__(self, return_matched_data_prob: float = 0.6, transform = None, use_resnet = False):
         data_config = get_data_config()
         self.data_dir = Path(data_config['DATA_ROOT_DIR'])
         self.lbl_path = Path(data_config['LABELS_DIR'])
         self.labels: List = read_json(self.lbl_path / "lbl.json")['data']
         self.prob = return_matched_data_prob
         self.transform = transform
+        self.use_resnet = use_resnet
 
     def __len__(self):
         return len(self.labels)
@@ -42,6 +43,18 @@ class ScanMatchingDataSet(Dataset):
             if self.transform:
                 cur_im_tensor = self.transform(cur_im_tensor)
                 cur_trans_tensor = self.transform(cur_trans_tensor)
+                
+            if self.use_resnet:
+                # make it 3 channel and resize
+                transform_resize = T.Resize(size = (224,224))
+                # resize tensors
+                cur_im_tensor = transform_resize(cur_im_tensor)
+                cur_trans_tensor = transform_resize(cur_trans_tensor)
+                
+                # make it 3 channel
+                cur_im_tensor = torch.cat([cur_im_tensor, cur_im_tensor, cur_im_tensor], dim=0) 
+                cur_trans_tensor = torch.cat([cur_trans_tensor, cur_trans_tensor, cur_trans_tensor], dim=0) 
+                
 
             return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
         else:
@@ -61,6 +74,17 @@ class ScanMatchingDataSet(Dataset):
             if self.transform:
                 cur_im_tensor = self.transform(cur_im_tensor)
                 cur_trans_tensor = self.transform(cur_trans_tensor)
+
+            if self.use_resnet:
+                # make it 3 channel and resize
+                transform_resize = T.Resize(size = (224,224))
+                # resize tensors
+                cur_im_tensor = transform_resize(cur_im_tensor)
+                cur_trans_tensor = transform_resize(cur_trans_tensor)
+                
+                # make it 3 channel
+                cur_im_tensor = torch.cat([cur_im_tensor, cur_im_tensor, cur_im_tensor], dim=0) 
+                cur_trans_tensor = torch.cat([cur_trans_tensor, cur_trans_tensor, cur_trans_tensor], dim=0) 
 
             return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
 

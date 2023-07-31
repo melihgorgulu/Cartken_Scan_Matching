@@ -1,8 +1,8 @@
 {
   "BATCH_SIZE": 32,
-  "IMAGE_HEIGHT": 300,
-  "IMAGE_WIDTH": 300,
-  "NUMBER_OF_CHANNEL": 1,
+  "IMAGE_HEIGHT": 224,
+  "IMAGE_WIDTH": 224,
+  "NUMBER_OF_CHANNEL": 3,
   "DATA_ROOT_DIR": "/home/melihgorgulu/cartken/Cartken_Scan_Matching/data/dataset",
   "LABELS_DIR": "/home/melihgorgulu/cartken/Cartken_Scan_Matching/data/dataset/labels",
   "RANDOM_AFFINE_TX": 0.2,
