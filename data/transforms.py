@@ -1,5 +1,5 @@
 from torch.utils.data.dataset import Dataset
-from typing import Any, Optional, List
+from typing import Tuple, Optional, List
 import torchvision.transforms as T
 import torch
 
@@ -31,26 +31,33 @@ class Standardize:
     
 
 class ResNet50_Transforms:
-    # TODO: Add transformation for resnet50
     """_summary_
     Apply required transformations for resnet50
     """
-    def __init__(self, h: int ,w: int, mean: List[float], std: List[float]):
+    def __init__(self, resize: Optional[Tuple(int, int)] = None, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
         self.mean = mean
         self.std = std
-        self.h = h
-        self.w = w
+        self.resize = resize
     
     def __call__(self, x):
         # resize
-        transform_resize = T.Resize(size = (self.h, self.w))
-        x = transform_resize(x)
-        # add rgb channel
-        x = torch.cat([x, x, x], dim=0)
+        # TODO: Maybe you dont need resize check it
+        if self.resize:
+            h, w = self.resize
+            transform_resize = T.Resize(size = (h, w))
+            x = transform_resize(x)
+        if (len(x.shape) != 3 or len(x.shape) != 4):
+            # add rgb channel
+            x = torch.cat([x, x, x], dim=0)
         # normalize channelwise
-        x[0, ... ] = (x[0,...] - self.mean[0]) / self.std[0]
-        x[1, ... ] = (x[1,...] - self.mean[1]) / self.std[1]
-        x[2, ... ] = (x[2,...] - self.mean[2]) / self.std[2]
+        if self.mean and self.std:
+            x[0, ... ] = (x[0,...] - self.mean[0]) / self.std[0]
+            x[1, ... ] = (x[1,...] - self.mean[1]) / self.std[1]
+            x[2, ... ] = (x[2,...] - self.mean[2]) / self.std[2]
+            
+        else:
+            x -= torch.tensor([[[0.485]], [[0.456]], [[0.406]]], device=x.device)
+            x /= torch.tensor([[[0.229]], [[0.224]], [[0.225]]], device=x.device)
         return x
         
         

@@ -90,12 +90,13 @@ def train(update_train_stats=False):
     epoch = train_config["EPOCH"]
 
     # train val and test split
-    full_dataset = ScanMatchingDataSet(use_resnet=True, return_matched_data_prob=0.5)
+    full_dataset = ScanMatchingDataSet(return_matched_data_prob=0.5)
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
     #transform_train = Compose([Standardize(mean=0.1879, std=0.1834)])  # statistics calculated via using training set
     #transform_train = Compose([ResNet50_Transforms(h = 224 ,w = 224, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    transform_train = Compose([ResNet50_Transforms(h = 224 ,w = 224, mean=[0.1879, 0.1879, 0.1879], std=[0.1834, 0.1834, 0.1834])])
+    transform_train = Compose([ResNet50_Transforms(resize=(224,224))]) # use default std mean
+    # transform_train = Compose([ResNet50_Transforms(h = 224 ,w = 224, mean=[0.1879, 0.1879, 0.1879], std=[0.1834, 0.1834, 0.1834])])
     train_dataset = DatasetFromSubset(train_dataset, transform=transform_train)
     # Use train set statistics to prevent information leakage
     val_dataset = DatasetFromSubset(val_dataset, transform=transform_train)
@@ -122,7 +123,7 @@ def train(update_train_stats=False):
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     # define the trainer
-    experiment_name = "31_07_new_arch_with_resnet50_test_only_match_2"
+    experiment_name = "31_07_new_arch_with_resnet50_test_only_tranformloss"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,
@@ -134,6 +135,7 @@ def train(update_train_stats=False):
         model_save_path.mkdir()
     trainer.save_model(model_save_path, name=experiment_name)
 
+# TODO: Try learning rate decay
 
 if __name__ == "__main__":
     train()
