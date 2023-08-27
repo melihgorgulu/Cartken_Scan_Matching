@@ -43,7 +43,8 @@ class ScanMatchingDataSet(Dataset):
             if self.transform:
                 cur_im_tensor = self.transform(cur_im_tensor)
                 cur_trans_tensor = self.transform(cur_trans_tensor)
-                
+            
+            '''
             if self.use_resnet:
                 # make it 3 channel and resize
                 transform_resize = T.Resize(size = (224,224))
@@ -54,7 +55,7 @@ class ScanMatchingDataSet(Dataset):
                 # make it 3 channel
                 cur_im_tensor = torch.cat([cur_im_tensor, cur_im_tensor, cur_im_tensor], dim=0) 
                 cur_trans_tensor = torch.cat([cur_trans_tensor, cur_trans_tensor, cur_trans_tensor], dim=0) 
-                
+            '''
 
             return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
         else:
@@ -74,17 +75,6 @@ class ScanMatchingDataSet(Dataset):
             if self.transform:
                 cur_im_tensor = self.transform(cur_im_tensor)
                 cur_trans_tensor = self.transform(cur_trans_tensor)
-                
-            if self.use_resnet:
-                # make it 3 channel and resize
-                transform_resize = T.Resize(size = (224,224))
-                # resize tensors
-                cur_im_tensor = transform_resize(cur_im_tensor)
-                cur_trans_tensor = transform_resize(cur_trans_tensor)
-                
-                # make it 3 channel
-                cur_im_tensor = torch.cat([cur_im_tensor, cur_im_tensor, cur_im_tensor], dim=0) 
-                cur_trans_tensor = torch.cat([cur_trans_tensor, cur_trans_tensor, cur_trans_tensor], dim=0) 
 
             return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
 

@@ -41,7 +41,6 @@ class SMNetTrainer:
         logging.basicConfig(level=logging.INFO)
 
     # DONE: Calculate mean loss for each epoch
-    # TODO: ADD GT TO PREDICTIONS VIS RESULTS AND APPLY SIGMOID TO MATCH LOGITS
     def fit(self, train_loader, val_loader, epochs):
         early_stopper = EarlyStopper(patience=5, min_delta=0.1)
         logging.info(
