@@ -10,12 +10,11 @@ import torchvision.transforms as T
 
 class ScanMatchingDataSet(Dataset):
 
-    def __init__(self, return_matched_data_prob: float = 0.6, transform = None, use_resnet = False):
+    def __init__(self, transform = None, use_resnet = False):
         data_config = get_data_config()
         self.data_dir = Path(data_config['DATA_ROOT_DIR'])
         self.lbl_path = Path(data_config['LABELS_DIR'])
         self.labels: List = read_json(self.lbl_path / "lbl.json")['data']
-        self.prob = return_matched_data_prob
         self.transform = transform
         self.use_resnet = use_resnet
 
@@ -28,55 +27,34 @@ class ScanMatchingDataSet(Dataset):
         :param item_idx: Index of item to be fetched
         :return: image tensor, translated image tensor, gt tensor
         """
-        choice = random.choices([1, 0], weights=[self.prob, 1.0 - self.prob])[0]
-        if choice == 1:
-            cur_item_lbl: Dict = self.labels[item_idx]
-            cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
-            cur_trans_img_path = self.data_dir / "transformed_patches" / cur_item_lbl['translated_patch_name']
-            cos_gt, sin_gt = cur_item_lbl['gt_rot']
-            tx_gt, ty_gt = cur_item_lbl['gt_trans']
-            gt_transformation = torch.tensor([cos_gt, sin_gt, tx_gt, ty_gt], dtype=torch.float32)
-            gt_is_matched = torch.tensor([1.0], dtype=torch.float32)
+        cur_item_lbl: Dict = self.labels[item_idx]
+        cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
+        cur_trans_img_path = self.data_dir / "transformed_patches" / cur_item_lbl['translated_patch_name']
+        cos_gt, sin_gt = cur_item_lbl['gt_rot']
+        tx_gt, ty_gt = cur_item_lbl['gt_trans']
+        gt_transformation = torch.tensor([cos_gt, sin_gt, tx_gt, ty_gt], dtype=torch.float32)
+        gt_is_matched = torch.tensor([cur_item_lbl['gt_match']], dtype=torch.float32)
 
-            cur_im_tensor = load_to_tensor(cur_im_path)
-            cur_trans_tensor = load_to_tensor(cur_trans_img_path)
-            if self.transform:
-                cur_im_tensor = self.transform(cur_im_tensor)
-                cur_trans_tensor = self.transform(cur_trans_tensor)
+        cur_im_tensor = load_to_tensor(cur_im_path)
+        cur_trans_tensor = load_to_tensor(cur_trans_img_path)
+        if self.transform:
+            cur_im_tensor = self.transform(cur_im_tensor)
+            cur_trans_tensor = self.transform(cur_trans_tensor)
+        
+        '''
+        if self.use_resnet:
+            # make it 3 channel and resize
+            transform_resize = T.Resize(size = (224,224))
+            # resize tensors
+            cur_im_tensor = transform_resize(cur_im_tensor)
+            cur_trans_tensor = transform_resize(cur_trans_tensor)
             
-            '''
-            if self.use_resnet:
-                # make it 3 channel and resize
-                transform_resize = T.Resize(size = (224,224))
-                # resize tensors
-                cur_im_tensor = transform_resize(cur_im_tensor)
-                cur_trans_tensor = transform_resize(cur_trans_tensor)
-                
-                # make it 3 channel
-                cur_im_tensor = torch.cat([cur_im_tensor, cur_im_tensor, cur_im_tensor], dim=0) 
-                cur_trans_tensor = torch.cat([cur_trans_tensor, cur_trans_tensor, cur_trans_tensor], dim=0) 
-            '''
+            # make it 3 channel
+            cur_im_tensor = torch.cat([cur_im_tensor, cur_im_tensor, cur_im_tensor], dim=0) 
+            cur_trans_tensor = torch.cat([cur_trans_tensor, cur_trans_tensor, cur_trans_tensor], dim=0) 
+        '''
 
-            return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
-        else:
-            cur_item_lbl: Dict = self.labels[item_idx]
-            cur_im_path = self.data_dir / "patches" / cur_item_lbl['org_patch_name']
-            gt_transformation = torch.tensor([0, 0, 0, 0], dtype=torch.float32)
-            gt_is_matched = torch.tensor([0.0], dtype=torch.float32)
-
-            # select random transformed image, should be a non-matching scan.
-            random_idx = random.choice([i for i in range(len(self.labels)) if i != item_idx])
-            nan_match_target_item_lbl: Dict = self.labels[random_idx]
-            nan_match_trans_img_path = self.data_dir / "transformed_patches" / nan_match_target_item_lbl[
-                'translated_patch_name']
-
-            cur_im_tensor = load_to_tensor(cur_im_path)
-            cur_trans_tensor = load_to_tensor(nan_match_trans_img_path)
-            if self.transform:
-                cur_im_tensor = self.transform(cur_im_tensor)
-                cur_trans_tensor = self.transform(cur_trans_tensor)
-
-            return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
+        return cur_im_tensor, cur_trans_tensor, gt_is_matched, gt_transformation
 
 
 class DatasetFromSubset(Dataset):

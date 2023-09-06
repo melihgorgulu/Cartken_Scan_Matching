@@ -33,12 +33,23 @@ def calculate_all_stats(labels_list: List) -> Dict:
 
     tx_stats = get_stats(translation_x_all)
     ty_stats = get_stats(translation_y_all)
+    # -----O------
+    # match statistics
+    number_of_match = 0
+    for i in labels_list:
+        number_of_match += int(i["gt_match"][0])
+        
+    number_of_unmatch = len(labels_list) - number_of_match
+        
 
     out = {
+        "dataset_size": len(labels_list),
         "cos_stats": rot_cos_stats,
         "sin_stats": rot_sin_stats,
         "tx_stats": tx_stats,
-        "ty_stats": ty_stats
+        "ty_stats": ty_stats,
+        "number_of_match":number_of_match,
+        "number_of_unmatch":number_of_unmatch,
     }
 
     return out
@@ -55,3 +66,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -216,7 +216,7 @@ def augment(map_image_path, json_name, num_sample_rectangles):
     map_image = load_to_tensor(Path(map_image_path))
     h, w = map_image.shape[1], map_image.shape[2]
     if h <= 3 * crop_height or w <= 3 * crop_width:
-        return 0
+        return False
 
     # sampled_points = sample_points_in_rectangle(crop_width, crop_height, 5)
     # vis_sampled_points(sampled_points, crop_width, crop_width)
@@ -229,7 +229,7 @@ def augment(map_image_path, json_name, num_sample_rectangles):
     num_sample_rectangles = num_sample_rectangles
     rectangle_data = {"data": []}
     key_rect_id = 0
-    for box in patches[:20]:
+    for box in patches:
         x_min, y_min = box[0], box[1]
         x_max, y_max = box[2], box[3]
         x_c = min(x_max, x_min) + abs(x_max - x_min) // 2
@@ -264,6 +264,9 @@ def augment(map_image_path, json_name, num_sample_rectangles):
         rectangle_data['data'].append(cur_key_rect_dict)
         key_rect_id += 1
 
+    if not rectangle_data['data']:
+        return False
+    
     center_difference = 4 * crop_height // 2 * 2 ** 0.5  # discard each 3 rectangle outside the corresponding rect.
     rectangle_data = create_unmatched_samples(rectangle_data, num_sample_rectangles,
                                               center_difference=center_difference)
@@ -276,13 +279,13 @@ def augment(map_image_path, json_name, num_sample_rectangles):
 
 
 if __name__ == "__main__":
-    maps_path = Path("/Users/melihgorgulu/Desktop/Projects/Cartken/Dataloader_analysis/maps")
+    maps_path = Path("/home/melihgorgulu/cartken/Cartken_Scan_Matching/data/dataset/maps")
     for f_name in maps_path.iterdir():
         if ".DS_Store" in str(f_name):
             continue
         map_name = f_name.name
         map_image_path = f_name / "map.png"
-        ack = augment(map_image_path, str(map_name), num_sample_rectangles=2)
+        ack = augment(map_image_path, str(map_name), num_sample_rectangles=10)
         if not ack:
             logger.warning(f"{map_name} size is not sufficient to create crops with specified size.")
         else:

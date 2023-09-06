@@ -34,7 +34,7 @@ class ResNet50_Transforms:
     """_summary_
     Apply required transformations for resnet50
     """
-    def __init__(self, resize: Optional[Tuple(int, int)] = None, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
+    def __init__(self, resize: Optional[Tuple[int]] = None, mean: Optional[List[float]] = None, std: Optional[List[float]] = None):
         self.mean = mean
         self.std = std
         self.resize = resize

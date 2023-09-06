@@ -24,7 +24,7 @@ def create_dataset(meta_data_path: Path):
         transformed_patches_dir.mkdir()
         labels_dir.mkdir()
 
-    root_data_path = Path("/Users/melihgorgulu/Desktop/Projects/Cartken/Dataloader_analysis/maps")
+    root_data_path = Path("/home/melihgorgulu/cartken/Cartken_Scan_Matching/data/dataset/maps")
     gt_dict = {'data': []}
     for meta_data_path in meta_data_path.iterdir():
         if ".DS_Store" in str(meta_data_path):
@@ -102,11 +102,11 @@ def create_dataset(meta_data_path: Path):
 
     # shuffle gt_dict
     random.shuffle(gt_dict['data'])
-    save_to_json(dictionary=gt_dict, json_path=str(labels_dir / "labels.json"))
+    save_to_json(dictionary=gt_dict, json_path=str(labels_dir / "lbl.json"))
 
 
 if __name__ == "__main__":
-    meta_data_path = Path("/Users/melihgorgulu/Desktop/Projects/Cartken/Dataloader_analysis/demo/dataset/data_meta")
+    meta_data_path = Path("/home/melihgorgulu/cartken/Cartken_Scan_Matching/data/dataset/data_meta")
     create_dataset(meta_data_path)
 
     print("DONE!!")
