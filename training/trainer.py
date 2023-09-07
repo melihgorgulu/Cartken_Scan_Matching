@@ -17,13 +17,14 @@ class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
                  logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
                  experiment_name: Optional[str] = "test", show_all_losses: bool = False, vis_predictions_every_n=None,
-                 vis_validation=False):
+                 vis_validation=False, use_early_stop=False):
 
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
         self.logger_kwargs = logger_kwargs
         self.show_all_losses = show_all_losses
+        self.use_early_stop = use_early_stop
         self.device = self._get_device(device)
         self.experiment_name = experiment_name
         self.train_stats_config = train_stats_config
@@ -120,10 +121,10 @@ class SMNetTrainer:
                 epoch_time,
                 **self.logger_kwargs
             )
-            
-            if early_stopper.early_stop(validation_loss=val_loss):
-                        logging.info("Early Stopping.")
-                        break
+            if self.use_early_stop:
+                if early_stopper.early_stop(validation_loss=val_loss):
+                            logging.info("Early Stopping.")
+                            break
 
         total_time = time.time() - total_start_time
 

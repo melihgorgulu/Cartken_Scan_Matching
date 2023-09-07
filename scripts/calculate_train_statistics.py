@@ -37,7 +37,7 @@ def calculate_all_stats(labels_list: List) -> Dict:
     # match statistics
     number_of_match = 0
     for i in labels_list:
-        number_of_match += int(i["gt_match"][0])
+        number_of_match += int(i["gt_match"])
         
     number_of_unmatch = len(labels_list) - number_of_match
         

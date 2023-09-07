@@ -90,12 +90,13 @@ def train(update_train_stats=False):
     epoch = train_config["EPOCH"]
 
     # train val and test split
-    full_dataset = ScanMatchingDataSet(use_resnet=True)
+    full_dataset = ScanMatchingDataSet()
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
+    print(f"Train test split. Train Size: {len(train_dataset)}, Val Size: {len(val_dataset)}, Test Size: {len(test_dataset)}")
     #transform_train = Compose([Standardize(mean=0.1879, std=0.1834)])  # statistics calculated via using training set
     #transform_train = Compose([ResNet50_Transforms(h = 224 ,w = 224, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    transform_train = Compose([ResNet50_Transforms(resize=(224,224))]) # use default std mean
+    transform_train = Compose([ResNet50_Transforms()]) # use default std mean
     # transform_train = Compose([ResNet50_Transforms(h = 224 ,w = 224, mean=[0.1879, 0.1879, 0.1879], std=[0.1834, 0.1834, 0.1834])])
     train_dataset = DatasetFromSubset(train_dataset, transform=transform_train)
     # Use train set statistics to prevent information leakage
@@ -127,7 +128,7 @@ def train(update_train_stats=False):
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,
-                           vis_predictions_every_n=None, show_all_losses=True)
+                           vis_predictions_every_n=None, show_all_losses=True, use_early_stop=False)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
     model_save_path = Path(f"trained_models")
