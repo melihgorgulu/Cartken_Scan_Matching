@@ -1,28 +1,14 @@
-
-"""
-test if the model can over fit with single data.
-
-with few data, test if network can generalize bit.
-
-"""
-
-import os
-
+from utils.io_utils import revert_image_transform, convert_tensor_to_pil
 from data.data_model import ScanMatchingDataSet
 from data.transforms import Standardize, ResNet50_Transforms
 from data.data_model import DatasetFromSubset
 from torch.utils.data import DataLoader
-from utils.config import get_train_config, get_data_config, get_stats_config
+from utils.config import get_train_config
 import torch
+import matplotlib.pyplot as plt
 
-from model.networks import BasicSMNetwork, SmNetwithResNetBackBone
-from training.losses import CombinedLoss
-from training.trainer import SMNetTrainer
 
-from pathlib import Path
-from typing import Dict, List
-from utils.io_utils import read_json, save_to_json
-from scripts.calculate_train_statistics import calculate_all_stats
+from typing import List
 
 from torchvision.transforms import Compose
 
@@ -30,8 +16,7 @@ import math
 from torch import default_generator, randperm
 from torch._utils import _accumulate
 from torch.utils.data.dataset import Subset
-
-import warnings
+from torchvision.transforms import Compose
 
 def random_split(dataset, lengths,
                  generator=default_generator):
@@ -84,28 +69,17 @@ def random_split(dataset, lengths,
     return [Subset(dataset, indices[offset - length : offset]) for offset, length in zip(_accumulate(lengths), lengths)]
 
 
-
-def test_model_training(update_train_stats=False):
-    
+def get_train_loader():
     train_config = get_train_config()
     # dataset params
     train_size, val_size, test_size = train_config["TRAIN_SIZE"], train_config["VAL_SIZE"], train_config["TEST_SIZE"]
     shuffle = train_config["SHUFFLE_DATASET"]
     # training params
     batch_size = train_config["BATCH_SIZE"]
-    transform_loss_weight = train_config["TRANSFORM_WEIGHT"]
-    match_loss_weight = train_config["MATCH_WEIGHT"]
-    device = train_config["DEVICE"]
-    lr = train_config["LEARNING_RATE"]
-    wd = train_config["WEIGHT_DECAY"]
-    epoch = train_config["EPOCH"]
+    batch_size = 1
 
     # train val and test split
-    
     full_dataset = ScanMatchingDataSet()
-    train_size = 0.0001
-    val_size = 0.0001
-    test_size = 0.9998
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_size, val_size, test_size],
                                                             generator=torch.Generator().manual_seed(42))
     print(f"Train test split. Train Size: {len(train_dataset)}, Val Size: {len(val_dataset)}, Test Size: {len(test_dataset)}")
@@ -117,39 +91,55 @@ def test_model_training(update_train_stats=False):
     # Use train set statistics to prevent information leakage
     val_dataset = DatasetFromSubset(val_dataset, transform=transform_train)
 
-    if update_train_stats:
-        data_config: Dict = get_data_config()
-        lbl_path = Path(data_config['LABELS_DIR'])
-        labels: List = read_json(lbl_path / "lbl.json")['data']
-        stats: Dict = calculate_all_stats(labels)
-        save_to_json(stats, os.path.join(os.getenv("CONFIG_DIR"), "statsconfig.json"))
-
-    stats_config = get_stats_config()
     # use these train stats in network
 
     # dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-    # define the model
-    # model = BasicSMNetwork()
-    model = SmNetwithResNetBackBone()
-    # loss and optimizer
-    criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
-    # define the trainer
-    experiment_name = "definetly_test"
-    logger_kwargs = {'update_step': 1, 'show': True}
-    trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
-                           device=device, train_stats_config=stats_config, experiment_name=experiment_name,
-                           vis_predictions_every_n=None, show_all_losses=True)
-    trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
-    trainer.save_experiment(experiments_dir=Path("experiments"))
-    model_save_path = Path(f"trained_models")
-    if not model_save_path.exists():
-        model_save_path.mkdir()
-    trainer.save_model(model_save_path, name=experiment_name)
+    return train_loader
 
+def test_transforms():
+    train_loader = get_train_loader()
+    count = 0
+    for data in train_loader:
+        img_s, img_d, match, transform = data
+        if match.item() != 1.0:
+            continue
+        count += 1
+        img_s = img_s[0,...]
+        img_d = img_d[0,...]
+        match = match[0,...]
+        transform = transform[0,...]
+        try:
+            img_after_back_transform = revert_image_transform(img=img_d, transformation=transform)
+        except:
+            breakpoint()
+            print("hey")
+        source_img_pil = convert_tensor_to_pil(img_s)
+        targed_img_pil = convert_tensor_to_pil(img_d)
+        img_after_back_transform = convert_tensor_to_pil(img_after_back_transform)
+        # save
+        fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+        axs[0].imshow(source_img_pil)
+        axs[0].axis('off')  # Disable axes
+        axs[0].set_title("Source Image")
+        # Display the second image on the second subplot
+        axs[1].imshow(targed_img_pil)
+        axs[1].set_title("Trans Image")
+        axs[1].axis('off')  # Disable axes
 
+        # Display the third image on the third subplot
+        axs[2].imshow(img_after_back_transform)
+        axs[2].set_title("Image After backtransform applied")
+        axs[2].axis('off')  # Disable axes
+
+        main_title = f" Gt Match: {match.item():.2f}, trans: {transform}"
+        fig.suptitle(main_title, fontsize=12, fontweight='bold')
+        plt.tight_layout()
+        save_path = f"transforms_test/data_{count}.png"
+        plt.savefig(str(save_path))
+        if count == 10:
+            break
+    
+    
 if __name__ == "__main__":
-    test_model_training(update_train_stats=False)
+    test_transforms()
