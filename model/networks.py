@@ -82,6 +82,11 @@ class SmNetwithResNetBackBone(nn.Module):
         # extract features
         s2, _, _, _ = self.backbone(x1) # source features
         t2, _, _, _ = self.backbone(x2) # target features
+        b,_,h1,w1 = s2.size()
+        b,_,h2,w2 = t2.size()
+        if self.norm_feature:
+            s2 = feature_l2_norm(s2)
+            t2 = feature_l2_norm(t2)
         # Transform prediction
         f = concat([s2, t2], dim=1)
         f_flattened = self.flatten(f)
@@ -90,11 +95,7 @@ class SmNetwithResNetBackBone(nn.Module):
         # Feature matcher head
         # TODO: Another way to calculate corr matrix, also try it out
         # reshape feature maps for matrix multiplication
-        b,_,h1,w1 = s2.size()
-        b,_,h2,w2 = t2.size()
-        if self.norm_feature:
-            s2 = feature_l2_norm(s2)
-            t2 = feature_l2_norm(t2)
+
         #f1 = f1.view(b,c,h1*w1).transpose(1,2) # size [b,c,h*w]
         #f2 = f2.view(b,c,h2*w2) # size [b,c,h*w]
         # perform matrix mult.

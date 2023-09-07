@@ -10,7 +10,7 @@ class FeatureMatcherHead(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=n_in_channel, out_channels=128, kernel_size=3, padding="same", stride=1)
         self.conv2 = nn.Conv2d(in_channels=128, out_channels=64, kernel_size=3, padding="same", stride=1)
         if resnet_backbone:
-            self.fcn1 = nn.Linear(64*14*14, 512) # TODO: here is hardcoded, change it
+            self.fcn1 = nn.Linear(64*18*18, 512) # TODO: here is hardcoded, change it
         else:
             self.fcn1 = nn.Linear(64*9*9, 512) # TODO: here is hardcoded, change it
         self.fcn2 = nn.Linear(512, 1)
@@ -23,7 +23,6 @@ class FeatureMatcherHead(nn.Module):
         # self.fcn2 = nn.Linear(32, 1)
 
     def forward(self, x):
-        
         x = self.conv1(x)
         x = F.relu(x)
         x = self.maxpool2d(x)
