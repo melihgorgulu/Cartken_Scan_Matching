@@ -57,14 +57,14 @@ def create_dataset(meta_data_path: Path):
                 save_tensor_as_image(cur_samp_img, save_path=transformed_patches_dir / cur_samp_img_name)
                 # create GT Labels
                 # create GT cos and sin
-                angle_diff = cur_key_rect_obj.angle - cur_samp_rect_obj.angle
+                angle_diff = cur_samp_rect_obj.angle - cur_key_rect_obj.angle
                 if angle_diff < 0:
                     angle_diff = 360 + angle_diff
                 radian = math.radians(angle_diff)
                 gt_rot = [math.cos(radian), math.sin(radian)]
                 # create GT tx and ty
-                gt_tx = cur_key_rect_obj.center_x - cur_samp_rect_obj.center_x
-                gt_ty = cur_key_rect_obj.center_y - cur_samp_rect_obj.center_y
+                gt_tx = cur_samp_rect_obj.center_x - cur_key_rect_obj.center_x
+                gt_ty = cur_samp_rect_obj.center_y - cur_key_rect_obj.center_y
                 gt_trans = [gt_tx, gt_ty]
                 cur_lbl_dict = {"map_name": map_name,
                                 "org_patch_name": Path(cur_key_img_name).name,

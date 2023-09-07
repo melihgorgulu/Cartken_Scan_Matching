@@ -164,7 +164,7 @@ def create_rectangle_from_sampled_center(sampled_center, map_w, map_h, rect_w, r
     return rectangle
 
 
-def calculate_diff_between_two_rect(x1: RectangleCrop, x2: RectangleCrop):
+def calculate_dist_between_two_rect(x1: RectangleCrop, x2: RectangleCrop):
     return ((x1.center_x - x2.center_x) ** 2 + (x1.center_y - x2.center_y) ** 2) ** 0.5
 
 
@@ -182,7 +182,7 @@ def create_unmatched_samples(data: Dict, n, center_difference: float):
         cur_key_rect_obj: RectangleCrop = RectangleCrop(center=tuple(cur_data['center']),
                                                         angle=cur_data['angle'],
                                                         crop_size=(cur_data['H'], cur_data['W']))
-        all_center_diffs: List[float] = list(map(lambda x: calculate_diff_between_two_rect(cur_key_rect_obj, x),
+        all_center_diffs: List[float] = list(map(lambda x: calculate_dist_between_two_rect(cur_key_rect_obj, x),
                                                  all_rectangle_samples))
 
         # take all the rectangles that are far enough from key rectangle
@@ -226,7 +226,6 @@ def augment(map_image_path, json_name, num_sample_rectangles):
 
     patches = filter_patches(map_image, patches, p_h=crop_height, p_w=crop_width, threshold=0.4)
 
-    num_sample_rectangles = num_sample_rectangles
     rectangle_data = {"data": []}
     key_rect_id = 0
     for box in patches:

@@ -10,13 +10,12 @@ import torchvision.transforms as T
 
 class ScanMatchingDataSet(Dataset):
 
-    def __init__(self, transform = None, use_resnet = False):
+    def __init__(self, transform = None):
         data_config = get_data_config()
         self.data_dir = Path(data_config['DATA_ROOT_DIR'])
         self.lbl_path = Path(data_config['LABELS_DIR'])
         self.labels: List = read_json(self.lbl_path / "lbl.json")['data']
         self.transform = transform
-        self.use_resnet = use_resnet
 
     def __len__(self):
         return len(self.labels)
