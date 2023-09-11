@@ -1,4 +1,4 @@
-from model.networks import BasicSMNetwork, BasicBackbone
+from model.networks import BasicSMNetwork, BasicBackbone, SmNetwithResNetBackBone
 import torch
 from utils.config import get_data_config
 
@@ -23,7 +23,8 @@ def test_backbone():
 
 
 def test_model():
-    model = BasicSMNetwork()
+    # model = BasicSMNetwork()
+    model = SmNetwithResNetBackBone()
     input_shape = get_input_shape()
     print(f'Input: Two image with shape {input_shape}')
     x1 = torch.randn(input_shape)

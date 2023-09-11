@@ -7,7 +7,8 @@ from utils.config import get_data_config
 import random
 import torchvision.transforms as T
 
-
+# TODO: Check how much is the dataloading consumes the memory
+# TODO: 
 class ScanMatchingDataSet(Dataset):
 
     def __init__(self, transform = None):

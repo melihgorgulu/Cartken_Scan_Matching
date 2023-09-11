@@ -51,6 +51,7 @@ class CombinedLoss(nn.Module):
             translation_loss = self.criterion_translation(pred_translation[match_mask_indices, ...],
                                                           gt_translation[match_mask_indices, ...])
             transform_loss = rotation_loss + translation_loss
+            #transform_loss = rotation_loss
         else:
             # indicate that there is no matching pair in the batch
             rotation_loss = -1
@@ -58,6 +59,7 @@ class CombinedLoss(nn.Module):
             transform_loss = 0
 
         out = self.wt * transform_loss + self.wm * binary_match_loss
+        #out = transform_loss
 
         # return dictionary of losses
         loss_info = {

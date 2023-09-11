@@ -17,9 +17,10 @@ class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
                  logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
                  experiment_name: Optional[str] = "test", show_all_losses: bool = False, vis_predictions_every_n=None,
-                 vis_validation=False, use_early_stop=False):
+                 vis_validation=False, use_early_stop=False, scheduler=None):
 
         self.model = model
+        self.scheduler = scheduler
         self.criterion = criterion
         self.optimizer = optimizer
         self.logger_kwargs = logger_kwargs
@@ -162,7 +163,10 @@ class SMNetTrainer:
             loss.backward()
 
             # parameters update
-            self.optimizer.step()
+            if self.scheduler:
+                self.scheduler.step()
+            else:
+                self.optimizer.step()
             mean_loss += loss.item()
             index += 1
         mean_loss = mean_loss / index
