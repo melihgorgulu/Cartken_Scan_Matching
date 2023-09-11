@@ -1,5 +1,6 @@
 # Custom Ignores
-**/data/dataset/
+data/dataset/*
+!data/dataset/maps
 .DS_Store
 .idea
 .python-version
