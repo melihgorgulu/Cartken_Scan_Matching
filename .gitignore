@@ -5,7 +5,6 @@ data/dataset/*
 .idea
 .python-version
 experiments/
-.env
 training/trained_models/
 
 # Byte-compiled / optimized / DLL files
