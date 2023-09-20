@@ -18,6 +18,7 @@
   "USE_EARLYSTOP": true,
   "PATIANCE": 5,
   "MIN_DELTA": 0.1,
-  "EARLYSTOPPER_TRACK": "combined"
+  "EARLYSTOPPER_TRACK": "combined",
+  "UPDATE_TRAIN_STATS": false
 
 }

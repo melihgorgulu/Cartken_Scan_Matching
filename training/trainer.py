@@ -45,11 +45,17 @@ class SMNetTrainer:
 
     # DONE: Calculate mean loss for each epoch
     def fit(self, train_loader, val_loader, epochs):
-        if self.use_early_stop:
-            early_stopper = EarlyStopper(patience=self.train_config['PATIANCE'], min_delta=self.train_config['MIN_DELTA'])
+        
         logging.info(
             f"""Used device: {self.device} """
         )
+        if self.use_early_stop:
+            logging.info(f"Early Stopper is active. Tracked loss: '{self.train_config['EARLYSTOPPER_TRACK']}'")
+            early_stopper = EarlyStopper(patience=self.train_config['PATIANCE'], min_delta=self.train_config['MIN_DELTA'])
+        
+        if self.scheduler:
+            logging.info(f"Scheduler is active. Step Size: {self.train_config['SCHEDULER_STEP_SIZE']}, Gamma: {self.train_config['SCHEDULER_GAMMA']}")
+
         # track total training time
         total_start_time = time.time()
 
@@ -179,10 +185,6 @@ class SMNetTrainer:
             # loss
             loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
 
-            
-            # TODO: BURAYI KALDI REMOVEEE
-            if loss == 0:
-                continue
             # backprop
             loss.backward()
 
@@ -233,6 +235,7 @@ class SMNetTrainer:
     def _logger(self, tr_loss, val_loss, tr_loss_info, val_loss_info,
                 epoch, epochs, epoch_time, show=True, update_step=20):
         if show:
+            logging.info("______ MODEL TRAINING RESULTS ______\n")
             if epoch % update_step == 0 or epoch == 1:
                 # to satisfy pep8 common limit of characters
                 if self.show_all_losses:

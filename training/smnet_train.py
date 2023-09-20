@@ -77,7 +77,7 @@ def random_split(dataset, lengths,
     indices = randperm(sum(lengths), generator=generator).tolist()  # type: ignore[call-overload]
     return [Subset(dataset, indices[offset - length : offset]) for offset, length in zip(_accumulate(lengths), lengths)]
 
-def train(update_train_stats=False):
+def train():
     train_config = get_train_config()
     # dataset params
     train_size, val_size, test_size = train_config["TRAIN_SIZE"], train_config["VAL_SIZE"], train_config["TEST_SIZE"]
@@ -106,12 +106,13 @@ def train(update_train_stats=False):
     # Use train set statistics to prevent information leakage
     val_dataset = DatasetFromSubset(val_dataset, transform=transform_train)
 
-    if update_train_stats:
+    if train_config["UPDATE_TRAIN_STATS"]:
         data_config: Dict = get_data_config()
         lbl_path = Path(data_config['LABELS_DIR'])
         labels: List = read_json(lbl_path / "lbl.json")['data']
         stats: Dict = calculate_all_stats(labels)
         save_to_json(stats, os.path.join(os.getenv("CONFIG_DIR"), "statsconfig.json"))
+        print("Train stats are updated.")
 
     stats_config = get_stats_config()
     # use these train stats in network

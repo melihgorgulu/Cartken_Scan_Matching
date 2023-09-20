@@ -95,6 +95,8 @@ def test_model_training(update_train_stats=False):
     # training params
     batch_size = train_config["BATCH_SIZE"]
     transform_loss_weight = train_config["TRANSFORM_WEIGHT"]
+    translation_loss_weight = train_config['TRANSLATION_WEIGHT']
+    rotation_loss_weight = train_config['ROTATION_WEIGHT']
     match_loss_weight = train_config["MATCH_WEIGHT"]
     device = train_config["DEVICE"]
     lr = train_config["LEARNING_RATE"]
@@ -118,7 +120,7 @@ def test_model_training(update_train_stats=False):
     # Use train set statistics to prevent information leakage
     val_dataset = DatasetFromSubset(val_dataset, transform=transform_train)
 
-    if update_train_stats:
+    if train_config["UPDATE_TRAIN_STATS"]:
         data_config: Dict = get_data_config()
         lbl_path = Path(data_config['LABELS_DIR'])
         labels: List = read_json(lbl_path / "lbl.json")['data']
@@ -136,15 +138,20 @@ def test_model_training(update_train_stats=False):
     # model = BasicSMNetwork()
     model = SmNetwithResNetBackBone()
     # loss and optimizer
-    criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight)
+    criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight, 
+                             translation_w=translation_loss_weight, rotation_w=rotation_loss_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+    if train_config["USE_SCHEDULER"]:
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=train_config["SCHEDULER_STEP_SIZE"], 
+                                              gamma=train_config["SCHEDULER_GAMMA"])
+    else:
+        scheduler = None
     # define the trainer
-    experiment_name = "test_model_validation"
+    experiment_name = "test_model_general"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,
-                           vis_predictions_every_n=None, show_all_losses=True, use_early_stop=True, scheduler=scheduler)
+                           vis_predictions_every_n=None, show_all_losses=True, use_early_stop=train_config["USE_EARLYSTOP"], scheduler=scheduler)
     trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=epoch)
     trainer.save_experiment(experiments_dir=Path("experiments"))
     model_save_path = Path(f"trained_models")
