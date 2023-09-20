@@ -41,7 +41,7 @@ class ResNet50_Transforms:
     
     def __call__(self, x):
         # resize
-        # TODO: Maybe you dont need resize check it
+       
         if self.resize:
             h, w = self.resize
             transform_resize = T.Resize(size = (h, w))

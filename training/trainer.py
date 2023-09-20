@@ -28,6 +28,7 @@ class SMNetTrainer:
         self.use_early_stop = use_early_stop
         self.device = self._get_device(device)
         self.experiment_name = experiment_name
+        self.train_config = get_train_config()
         self.train_stats_config = train_stats_config
         self.vis_predictions_every_n = vis_predictions_every_n
         self.vis_validation = vis_validation
@@ -44,7 +45,8 @@ class SMNetTrainer:
 
     # DONE: Calculate mean loss for each epoch
     def fit(self, train_loader, val_loader, epochs):
-        early_stopper = EarlyStopper(patience=5, min_delta=0.1)
+        if self.use_early_stop:
+            early_stopper = EarlyStopper(patience=self.train_config['PATIANCE'], min_delta=self.train_config['MIN_DELTA'])
         logging.info(
             f"""Used device: {self.device} """
         )
@@ -100,6 +102,7 @@ class SMNetTrainer:
                                                 prediction_match=prediction_match, 
                                                 experiment_name=self.experiment_name, epoch=epoch)
 
+
             tr_loss, tr_loss_info = self._train(train_loader)
 
             # validate
@@ -123,7 +126,24 @@ class SMNetTrainer:
                 **self.logger_kwargs
             )
             if self.use_early_stop:
-                if early_stopper.early_stop(validation_loss=val_loss):
+                target_track_loss = None
+                if self.train_config['EARLYSTOPPER_TRACK']=='combined':
+                    
+                    target_track_loss=val_loss
+                elif self.train_config['EARLYSTOPPER_TRACK']=='translation':
+                    target_track_loss=val_loss_info['translation_loss']
+                elif self.train_config['EARLYSTOPPER_TRACK']=='rotation':
+                    target_track_loss=val_loss_info['rotation_loss']
+                elif self.train_config['EARLYSTOPPER_TRACK']=='transformation':
+                    target_track_loss=val_loss_info['transform_loss']
+                    
+                elif self.train_config['EARLYSTOPPER_TRACK']=='match':
+                    target_track_loss=val_loss_info['match_loss']
+                
+                else:
+                    raise NameError('Earlystopper track only support these: "combined", "translation", "rotation", "transformation","match". Please provide one of them')
+            
+                if early_stopper.early_stop(validation_loss=target_track_loss):
                             logging.info("Early Stopping.")
                             break
 
@@ -159,6 +179,10 @@ class SMNetTrainer:
             # loss
             loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
 
+            
+            # TODO: BURAYI KALDI REMOVEEE
+            if loss == 0:
+                continue
             # backprop
             loss.backward()
 
@@ -192,6 +216,10 @@ class SMNetTrainer:
 
                 # loss
                 loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
+                
+                # TODO: BURAYI KALDIR REMOVEEE
+                if loss == 0:
+                    continue
                 index += 1
                 mean_loss += loss.item()
         mean_loss = mean_loss / index
@@ -246,8 +274,7 @@ class SMNetTrainer:
 
         cur_experiment_dir = experiments_dir / self.experiment_name
         cur_experiment_dir.mkdir(parents=True, exist_ok=True)
-        current_training_config = get_train_config()
-        save_to_json(current_training_config, str(cur_experiment_dir / "_train_config.json"))
+        save_to_json(self.train_config, str(cur_experiment_dir / "_train_config.json"))
 
         # save train-val combined loss graph
 

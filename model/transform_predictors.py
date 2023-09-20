@@ -2,7 +2,7 @@
 from torch import nn
 import torch.nn.functional as F
 
-# TODO: check how big is your model
+
 
 class TransformPredictorHead(nn.Module):
     def __init__(self, input_shape):

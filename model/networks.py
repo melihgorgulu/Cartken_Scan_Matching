@@ -45,7 +45,6 @@ class BasicSMNetwork(nn.Module):
         # Transform predictor head
         transform_pred = self.transform_head(f_flattened)
         # Feature matcher head
-        # TODO: Another way to calculate corr matrix, also try it out
         # reshape feature maps for matrix multiplication
         b,_,h1,w1 = f1.size()
         b,_,h2,w2 = f2.size()
@@ -97,7 +96,6 @@ class SmNetwithResNetBackBone(nn.Module):
         x = concat([x1, x2], dim=1)
         transform_pred = self.transform_head(x)
         # Feature matcher head
-        # TODO: Another way to calculate corr matrix, also try it out
         # reshape feature maps for matrix multiplication
 
         #f1 = f1.view(b,c,h1*w1).transpose(1,2) # size [b,c,h*w]

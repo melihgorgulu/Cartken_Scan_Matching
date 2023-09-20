@@ -5,14 +5,17 @@ from typing import Tuple
 
 class CombinedLoss(nn.Module):
     def __init__(self, criterion_rotation: nn.Module = nn.HuberLoss, criterion_translation: nn.Module = nn.L1Loss,
-                 criterion_match: nn.Module = nn.BCEWithLogitsLoss, transform_w: float = 0.6, match_w: float = 0.4):
+                 criterion_match: nn.Module = nn.BCEWithLogitsLoss, transform_w: float = 0.5, match_w: float = 0.5, 
+                 translation_w: float = 0.5, rotation_w: float = 0.5):
         super().__init__()
         self.criterion_rotation = criterion_rotation()
         self.criterion_translation = criterion_translation()
         self.criterion_match = criterion_match()
-        self.wt = transform_w
-        self.wm = match_w
-
+        self.w_transform = transform_w
+        self.w_match = match_w
+        self.w_translation = translation_w
+        self.w_rotation = rotation_w
+        
     def forward(self, pred: Tuple, gt: Tuple):
         gt_match, gt_transform = gt
         pred_match, pred_transform = pred
@@ -50,15 +53,16 @@ class CombinedLoss(nn.Module):
                                                     gt_rotation[match_mask_indices, ...])
             translation_loss = self.criterion_translation(pred_translation[match_mask_indices, ...],
                                                           gt_translation[match_mask_indices, ...])
-            transform_loss = rotation_loss + translation_loss
-            #transform_loss = rotation_loss
+            transform_loss = self.w_rotation * rotation_loss + self.w_translation * translation_loss
+            #transform_loss = translation_loss
         else:
             # indicate that there is no matching pair in the batch
+            breakpoint()
             rotation_loss = -1
             translation_loss = -1
             transform_loss = 0
 
-        out = self.wt * transform_loss + self.wm * binary_match_loss
+        out = self.w_transform * transform_loss + self.w_match * binary_match_loss
         #out = transform_loss
 
         # return dictionary of losses
@@ -67,6 +71,6 @@ class CombinedLoss(nn.Module):
             "rotation_loss": rotation_loss.item() if type(rotation_loss) != int else rotation_loss,
             "translation_loss": translation_loss.item() if type(translation_loss) != int else translation_loss,
             "transform_loss": transform_loss.item() if type(transform_loss) != int else transform_loss,
-            "combined_loss": out.item()
+            "combined_loss": out.item() if type(out) != int else out
         }
         return out, loss_info
