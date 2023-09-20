@@ -15,7 +15,7 @@
   "USE_SCHEDULER": false,
   "SCHEDULER_STEP_SIZE": 5,
   "SCHEDULER_GAMMA": 0.1,
-  "USE_EARLYSTOP": true,
+  "USE_EARLYSTOP": false,
   "PATIANCE": 5,
   "MIN_DELTA": 0.1,
   "EARLYSTOPPER_TRACK": "combined",

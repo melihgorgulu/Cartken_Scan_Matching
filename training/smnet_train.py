@@ -136,7 +136,7 @@ def train():
     else:
         scheduler = None
     # define the trainer
-    experiment_name = "20_09_2023_test_losses"
+    experiment_name = "20_09_2023_test_1"
     logger_kwargs = {'update_step': 1, 'show': True}
     trainer = SMNetTrainer(model, criterion, optimizer, logger_kwargs=logger_kwargs,
                            device=device, train_stats_config=stats_config, experiment_name=experiment_name,

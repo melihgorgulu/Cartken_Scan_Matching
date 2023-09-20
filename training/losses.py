@@ -1,7 +1,7 @@
 
 import torch.nn as nn
 from typing import Tuple
-
+import torch
 
 class CombinedLoss(nn.Module):
     def __init__(self, criterion_rotation: nn.Module = nn.HuberLoss, criterion_translation: nn.Module = nn.L1Loss,
@@ -54,23 +54,22 @@ class CombinedLoss(nn.Module):
             translation_loss = self.criterion_translation(pred_translation[match_mask_indices, ...],
                                                           gt_translation[match_mask_indices, ...])
             transform_loss = self.w_rotation * rotation_loss + self.w_translation * translation_loss
-            #transform_loss = translation_loss
+            out = self.w_transform * transform_loss + self.w_match * binary_match_loss
         else:
             # indicate that there is no matching pair in the batch
-            breakpoint()
-            rotation_loss = -1
-            translation_loss = -1
-            transform_loss = 0
+            rotation_loss = None
+            translation_loss = None
+            transform_loss = None
+            # output loss do not contains transform loss
+            out = self.w_match * binary_match_loss
 
-        out = self.w_transform * transform_loss + self.w_match * binary_match_loss
-        #out = transform_loss
 
         # return dictionary of losses
         loss_info = {
             "match_loss": binary_match_loss.item(),
-            "rotation_loss": rotation_loss.item() if type(rotation_loss) != int else rotation_loss,
-            "translation_loss": translation_loss.item() if type(translation_loss) != int else translation_loss,
-            "transform_loss": transform_loss.item() if type(transform_loss) != int else transform_loss,
-            "combined_loss": out.item() if type(out) != int else out
+            "rotation_loss": rotation_loss.item() if type(rotation_loss) == torch.Tensor else rotation_loss,
+            "translation_loss": translation_loss.item() if type(translation_loss) == torch.Tensor else translation_loss,
+            "transform_loss": transform_loss.item() if type(transform_loss) == torch.Tensor  else transform_loss,
+            "combined_loss": out.item() if type(out) == torch.Tensor else out
         }
         return out, loss_info

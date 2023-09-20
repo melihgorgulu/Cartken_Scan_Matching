@@ -45,7 +45,6 @@ class SMNetTrainer:
 
     # DONE: Calculate mean loss for each epoch
     def fit(self, train_loader, val_loader, epochs):
-        
         logging.info(
             f"""Used device: {self.device} """
         )
@@ -162,10 +161,16 @@ class SMNetTrainer:
 
     def _train(self, dataloader: DataLoader):
         self.model.train()
-        mean_loss = 0.0
+        # calculate mean loss for all the iterations in 1 batch
+        mean_combined_loss = 0.0
+        mean_translation_loss = 0.0
+        mean_transform_loss = 0.0
+        mean_rotation_loss = 0.0
+        mean_match_loss = 0.0
         loss_info = {}
         tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
         index = 0
+        index_transform = 0
         for cur_data in dataloader:
             # move to device
             cur_data = self._to_device(cur_data, device=self.device)
@@ -193,16 +198,44 @@ class SMNetTrainer:
                 self.scheduler.step()
             else:
                 self.optimizer.step()
-            mean_loss += loss.item()
+
+            mean_combined_loss += loss.item()
+            mean_match_loss += loss_info['match_loss']
+            # if the returned loss info contains none for translation, transform and rotation
+            if loss_info['translation_loss']:
+                mean_translation_loss += loss_info['translation_loss']
+            if loss_info['transform_loss']:
+                mean_transform_loss += loss_info['transform_loss']
+            if loss_info['rotation_loss']:
+                mean_rotation_loss += loss_info['rotation_loss']
+            
+            if loss_info['translation_loss'] or loss_info['transform_loss'] or loss_info['rotation_loss']:
+                index_transform += 1
+                
             index += 1
-        mean_loss = mean_loss / index
-        return mean_loss, loss_info
+            
+        # calculate mean    
+        mean_combined_loss = mean_combined_loss / index
+        mean_match_loss = mean_match_loss / index
+        mean_rotation_loss = mean_rotation_loss / index_transform
+        mean_transform_loss = mean_transform_loss / index_transform
+        mean_translation_loss = mean_translation_loss / index_transform
+        
+        loss_info_mean = {'match_loss': mean_match_loss, 'rotation_loss': mean_rotation_loss, 
+                          'translation_loss':mean_translation_loss, 'transform_loss': mean_transform_loss, 
+                          'combined_loss': mean_combined_loss}
+        return mean_combined_loss, loss_info_mean
 
     def _validate(self, dataloader):
         self.model.eval()
         tx_max, ty_max = self.train_stats_config["tx_stats"]["max"], self.train_stats_config["ty_stats"]["max"]
-        mean_loss = 0.0
+        mean_combined_loss = 0.0
+        mean_translation_loss = 0.0
+        mean_transform_loss = 0.0
+        mean_rotation_loss = 0.0
+        mean_match_loss = 0.0
         index = 0
+        index_transform = 0
         with torch.no_grad():
             for cur_data in dataloader:
                 # move to device
@@ -219,13 +252,32 @@ class SMNetTrainer:
                 # loss
                 loss, loss_info = self._compute_combined_loss(prediction, (cur_gt_match_batch, cur_gt_trans_batch))
                 
-                # TODO: BURAYI KALDIR REMOVEEE
-                if loss == 0:
-                    continue
+
+                mean_combined_loss += loss.item()
+                mean_match_loss += loss_info['match_loss']
+                # if the returned loss info contains none for translation, transform and rotation
+                if loss_info['translation_loss']:
+                    mean_translation_loss += loss_info['translation_loss']
+                if loss_info['transform_loss']:
+                    mean_transform_loss += loss_info['transform_loss']
+                if loss_info['rotation_loss']:
+                    mean_rotation_loss += loss_info['rotation_loss']
+                
+                if loss_info['translation_loss'] or loss_info['transform_loss'] or loss_info['rotation_loss']:
+                    index_transform += 1
+                
                 index += 1
-                mean_loss += loss.item()
-        mean_loss = mean_loss / index
-        return mean_loss, loss_info
+                
+        mean_combined_loss = mean_combined_loss / index
+        mean_match_loss = mean_match_loss / index
+        mean_rotation_loss = mean_rotation_loss / index_transform
+        mean_transform_loss = mean_transform_loss / index_transform
+        mean_translation_loss = mean_translation_loss / index_transform
+        
+        loss_info_mean = {'match_loss': mean_match_loss, 'rotation_loss': mean_rotation_loss, 
+                          'translation_loss':mean_translation_loss, 'transform_loss': mean_transform_loss, 
+                          'combined_loss': mean_combined_loss}
+        return mean_combined_loss, loss_info_mean
 
     def _compute_combined_loss(self, pred: Tuple, gt: Tuple):
         # model returns matching probability and transform prediction.
