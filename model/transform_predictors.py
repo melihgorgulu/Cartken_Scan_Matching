@@ -69,7 +69,54 @@ class CombinedImageTransformPredictor(nn.Module):
         x = self.tanh(x)
         return x
     
-    
+
+class CombinedImageTransformPredictor_Small(nn.Module):
+    def __init__(self, input_shape):
+        super().__init__()
+        _, ch, h, w = input_shape
+        self.conv1 = nn.Conv2d(in_channels=ch, out_channels=8, kernel_size=3, padding="same", stride=1)
+        self.conv2 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding="same", stride=1)
+        self.conv3 = nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, padding="same", stride=1)
+        self.conv4 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding="same", stride=1)
+        self.conv5 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding="same", stride=1)
+        self.batchnorm2d_1 = nn.BatchNorm2d(num_features=16)
+        self.batchnorm2d_2 = nn.BatchNorm2d(num_features=32)
+        self.maxpool2d = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        self.tanh = nn.Tanh()
+        self.fcn1 = nn.Linear(32 * (h//(2**5)) * (w//(2**5)), 16)
+        self.fcn2 = nn.Linear(16, 4)
+        self.flatten = nn.Flatten()
+        
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.maxpool2d(x)
+        
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.maxpool2d(x)
+        x = self.batchnorm2d_1(x)
+        
+        x = self.conv3(x)
+        x = F.relu(x)
+        x = self.maxpool2d(x)
+        
+        x = self.conv4(x)
+        x = F.relu(x)
+        x = self.maxpool2d(x)
+        x = self.batchnorm2d_2(x)
+        
+        x = self.conv5(x)
+        x = F.relu(x)
+        x = self.maxpool2d(x)
+        
+        x = self.flatten(x)
+        x = self.fcn1(x)
+        x = F.relu(x)
+        x = self.fcn2(x)
+        x = self.tanh(x)
+        return x
 
     
 class CorrelationMapTransformPredictor(nn.Module):

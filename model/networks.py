@@ -4,8 +4,8 @@ import torch.nn.functional as F
 from utils.config import get_data_config
 from typing import Tuple
 from .backbones import BasicBackbone, Resnet50
-from .matchers import FeatureMatcherHead
-from .transform_predictors import TransformPredictorHead, CombinedImageTransformPredictor, CorrelationMapTransformPredictor
+from .matchers import FeatureMatcherHead, FeatureMatcherHead_Small
+from .transform_predictors import TransformPredictorHead, CombinedImageTransformPredictor, CorrelationMapTransformPredictor, CombinedImageTransformPredictor_Small
 
 
 _data_config = get_data_config()
@@ -145,3 +145,51 @@ class SmNetCorrResNetBackBone(nn.Module):
         match_prob = self.feature_matcher_head(correlation_map)
 
         return match_prob, transform_pred
+
+
+class SmNetwithResNetBackBone_Small(nn.Module):
+    def __init__(self, norm_feature: bool = True):
+        super().__init__()
+        self.norm_feature = norm_feature
+        self.backbone = Resnet50(pretrained=True)
+        backbone_output_shape = self.backbone.get_output_shape()[0] # we are using c2
+        
+        input_shape = get_input_shape()
+        concat_input_shape = input_shape[0],input_shape[1]*2, input_shape[2], input_shape[3] # calculate the input shape if we concat two image together.
+        self.transform_head = CombinedImageTransformPredictor_Small(concat_input_shape)
+        self.feature_matcher_head = FeatureMatcherHead_Small(backbone_output_shape, resnet_backbone=True)
+        self.flatten = nn.Flatten()
+
+
+    def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        # extract features
+        s2, _, _, _ = self.backbone(x1) # source features
+        t2, _, _, _ = self.backbone(x2) # target features
+        b,_,h1,w1 = s2.size()
+        b,_,h2,w2 = t2.size()
+        if self.norm_feature:
+            s2 = feature_l2_norm(s2)
+            t2 = feature_l2_norm(t2)
+        # Transform prediction
+        #f = concat([s2, t2], dim=1)
+        #f_flattened = self.flatten(f)
+        # Transform predictor head
+        x = concat([x1, x2], dim=1)
+        transform_pred = self.transform_head(x)
+        # Feature matcher head
+        # reshape feature maps for matrix multiplication
+
+        #f1 = f1.view(b,c,h1*w1).transpose(1,2) # size [b,c,h*w]
+        #f2 = f2.view(b,c,h2*w2) # size [b,c,h*w]
+        # perform matrix mult.
+        #correlation_map = torch.bmm(f1,f2)
+        # correlation_map = correlation_map.view(b,h1,w1,h2,w2).unsqueeze(1)
+        # With EINSUM
+        correlation_map = torch.einsum("bfhw,bfxy->bwhxy", s2, t2)
+        correlation_map = correlation_map.view(b, h1*w1, h2, w2)
+        if self.norm_feature:
+            correlation_map = feature_l2_norm(F.relu(correlation_map))
+        match_prob = self.feature_matcher_head(correlation_map)
+
+        return match_prob, transform_pred
+    
