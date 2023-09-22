@@ -1,0 +1,23 @@
+{
+    "BATCH_SIZE": 14,
+    "TRAIN_SIZE": 0.9,
+    "TEST_SIZE": 0.05,
+    "VAL_SIZE": 0.05,
+    "EPOCH": 5,
+    "LEARNING_RATE": [1e-03,1e-05],
+    "WEIGHT_DECAY": [1e-04,1e-08],
+    "SHUFFLE_DATASET": true,
+    "DEVICE": "cuda",
+    "TRANSFORM_WEIGHT": [0.5,0.6],
+    "MATCH_WEIGHT": [0.5],
+    "TRANSLATION_WEIGHT": [0.5],
+    "ROTATION_WEIGHT": [0.5], 
+    "USE_SCHEDULER": false,
+    "SCHEDULER_STEP_SIZE": 5,
+    "SCHEDULER_GAMMA": 0.1,
+    "USE_EARLYSTOP": false,
+    "PATIANCE": 5,
+    "MIN_DELTA": 0.1,
+    "EARLYSTOPPER_TRACK": "combined",
+    "UPDATE_TRAIN_STATS": false
+  }

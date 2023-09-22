@@ -6,7 +6,7 @@ import time
 from torch.utils.data import DataLoader
 from pathlib import Path
 from utils.io_utils import save_to_json, save_loss_graph, revert_image_transform, convert_tensor_to_pil, save_prediction_results
-from utils.config import get_train_config
+from utils.config import get_train_config, get_gridsearch_config
 from training.early_stopping import EarlyStopper
 import random
 from PIL import Image
@@ -17,7 +17,7 @@ class SMNetTrainer:
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, optimizer: torch.optim,
                  logger_kwargs: Dict, train_stats_config: Dict, device: Optional[str] = None,
                  experiment_name: Optional[str] = "test", show_all_losses: bool = False, vis_predictions_every_n=None,
-                 vis_validation=False, use_early_stop=False, scheduler=None):
+                 vis_validation=False, use_early_stop=False, scheduler=None, is_grid_search=None):
 
         self.model = model
         self.scheduler = scheduler
@@ -28,7 +28,10 @@ class SMNetTrainer:
         self.use_early_stop = use_early_stop
         self.device = self._get_device(device)
         self.experiment_name = experiment_name
-        self.train_config = get_train_config()
+        if is_grid_search:
+            self.train_config = get_gridsearch_config()
+        else:
+            self.train_config = get_train_config()
         self.train_stats_config = train_stats_config
         self.vis_predictions_every_n = vis_predictions_every_n
         self.vis_validation = vis_validation

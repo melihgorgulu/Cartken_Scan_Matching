@@ -19,3 +19,8 @@ def get_stats_config() -> dict:
     stats_config_path = Path(os.getenv("CONFIG_DIR")) / "statsconfig.json"
     stats_config = read_json(stats_config_path)
     return stats_config
+
+def get_gridsearch_config() -> dict:
+    train_config_path = Path(os.getenv("CONFIG_DIR")) / "gridsearchconfig.json"
+    train_config = read_json(train_config_path)
+    return train_config
