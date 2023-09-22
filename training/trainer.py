@@ -194,10 +194,7 @@ class SMNetTrainer:
             loss.backward()
 
             # parameters update
-            if self.scheduler:
-                self.scheduler.step()
-            else:
-                self.optimizer.step()
+            self.optimizer.step()
 
             mean_combined_loss += loss.item()
             mean_match_loss += loss_info['match_loss']
@@ -213,7 +210,10 @@ class SMNetTrainer:
                 index_transform += 1
                 
             index += 1
-            
+        
+        # learning rate scheduler
+        if self.scheduler:
+            self.scheduler.step()
         # calculate mean    
         mean_combined_loss = mean_combined_loss / index
         mean_match_loss = mean_match_loss / index
