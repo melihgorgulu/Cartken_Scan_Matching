@@ -69,11 +69,17 @@ def train():
 
     # define the model
     # model = BasicSMNetwork()
-    model = SmNetwithResNetBackBone_Small()
+    model = SmNetwithResNetBackBone()
     # loss and optimizer
     criterion = CombinedLoss(transform_w=transform_loss_weight, match_w=match_loss_weight, 
                              translation_w=translation_loss_weight, rotation_w=rotation_loss_weight)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
+    
+    if train_config["USE_SEPARATE_LR"]: 
+        optimizer = torch.optim.Adam([{"params": model.backbone.parameters(), "lr":train_config["LEARNING_RATE_BACKBONE"], "weight_decay":wd},
+                                      {"params": model.feature_matcher_head.parameters(), "lr":train_config["LEARNING_RATE_MATCHER"], "weight_decay":wd},
+                                      {"params": model.transform_head.parameters(), "lr":train_config["LEARNING_RATE_TRANSFORM"], "weight_decay":wd}])
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     if train_config["USE_SCHEDULER"]:
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=train_config["SCHEDULER_STEP_SIZE"], 
                                               gamma=train_config["SCHEDULER_GAMMA"])
