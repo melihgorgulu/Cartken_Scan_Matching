@@ -17,13 +17,7 @@ tx_max, ty_max = stats_config["tx_stats"]["max"], stats_config["ty_stats"]["max"
 def apply_transform(map_image, gt_angle_diff, source_rect: RectangleCrop, pred_transformation):
 
     cost, sint, tx, ty = pred_transformation
-    deg_cos = abs(math.degrees(math.acos(cost)))
-    deg_sin = abs(math.degrees(math.asin(sint)))
-    
-    if abs((deg_cos-gt_angle_diff)) <=abs((deg_sin-gt_angle_diff)):
-        deg = deg_cos
-    else:
-        deg = deg_sin
+    deg = abs(math.degrees(math.acos(cost)))
 
     predicted_angle = source_rect.angle + deg
     if predicted_angle>360:
